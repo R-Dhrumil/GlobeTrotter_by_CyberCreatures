@@ -72,8 +72,8 @@ export const AdminLayout = () => {
           {/* Admin Header */}
           <div className="p-6 border-b border-stone-800">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-600 flex items-center justify-center text-white shadow-md">
-                <Compass className="w-6 h-6 animate-pulse" />
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-md">
+                <img src="/logo.png" alt="GlobeTrotter Logo" className="w-7 h-7 object-contain" />
               </div>
               <div>
                 <span className="text-xl font-bold font-serif text-white block leading-tight">
