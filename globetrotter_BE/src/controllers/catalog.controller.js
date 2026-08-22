@@ -7,14 +7,14 @@ import { catchAsync } from '../utils/catchAsync.js';
  * Get cities with search, filter by region/country, and sorting
  */
 export const getCities = catchAsync(async (req, res) => {
-  const { search, region, country, costIndex, sortBy } = req.query;
+  const { search, region, country, state, costIndex, sortBy } = req.query;
 
   const whereConditions = [];
   const params = [];
   let paramIdx = 1;
 
   if (search) {
-    whereConditions.push(`(c.name ILIKE $${paramIdx} OR c.country ILIKE $${paramIdx} OR c.description ILIKE $${paramIdx})`);
+    whereConditions.push(`(c.name ILIKE $${paramIdx} OR c.state ILIKE $${paramIdx} OR c.country ILIKE $${paramIdx} OR c.description ILIKE $${paramIdx})`);
     params.push(`%${search}%`);
     paramIdx++;
   }
@@ -27,6 +27,11 @@ export const getCities = catchAsync(async (req, res) => {
   if (country) {
     whereConditions.push(`c.country ILIKE $${paramIdx++}`);
     params.push(country);
+  }
+
+  if (state) {
+    whereConditions.push(`c.state ILIKE $${paramIdx++}`);
+    params.push(state);
   }
 
   if (costIndex) {
@@ -221,4 +226,34 @@ export const getGallery = catchAsync(async (req, res) => {
   }
 
   return ApiResponse.send(res, 200, { items: galleryItems, total: galleryItems.length }, 'Gallery feed retrieved');
+});
+
+/**
+ * Get Country -> State -> City hierarchy for cascading dropdowns and grouped catalogs
+ */
+export const getHierarchy = catchAsync(async (req, res) => {
+  const citiesRes = await db.query(
+    'SELECT id, name, state, country, region, "costIndex", "popularityScore", lat, lng, "imageUrl", description FROM "City" ORDER BY country ASC, state ASC, name ASC'
+  );
+
+  const hierarchyMap = {};
+  citiesRes.rows.forEach((c) => {
+    const country = c.country || 'Other';
+    const state = c.state || 'General';
+
+    if (!hierarchyMap[country]) {
+      hierarchyMap[country] = { country, states: {} };
+    }
+    if (!hierarchyMap[country].states[state]) {
+      hierarchyMap[country].states[state] = { state, cities: [] };
+    }
+    hierarchyMap[country].states[state].cities.push(c);
+  });
+
+  const hierarchy = Object.values(hierarchyMap).map((cObj) => ({
+    country: cObj.country,
+    states: Object.values(cObj.states),
+  }));
+
+  return ApiResponse.send(res, 200, { hierarchy }, 'Location hierarchy retrieved');
 });

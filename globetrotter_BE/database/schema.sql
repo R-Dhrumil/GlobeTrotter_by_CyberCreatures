@@ -91,10 +91,13 @@ CREATE INDEX "idx_otp_email" ON "Otp"("email");
 CREATE TABLE "City" (
     "id" VARCHAR(64) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     "name" VARCHAR(255) NOT NULL,
+    "state" VARCHAR(255) DEFAULT '',
     "country" VARCHAR(255) NOT NULL,
     "region" VARCHAR(100) DEFAULT 'Global',
     "costIndex" INTEGER DEFAULT 3 CHECK ("costIndex" BETWEEN 1 AND 5),
     "popularityScore" INTEGER DEFAULT 80 CHECK ("popularityScore" BETWEEN 1 AND 100),
+    "lat" DOUBLE PRECISION DEFAULT 0.0,
+    "lng" DOUBLE PRECISION DEFAULT 0.0,
     "imageUrl" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -102,6 +105,7 @@ CREATE TABLE "City" (
 );
 
 CREATE INDEX "idx_city_name" ON "City"("name");
+CREATE INDEX "idx_city_state" ON "City"("state");
 CREATE INDEX "idx_city_country" ON "City"("country");
 CREATE INDEX "idx_city_region" ON "City"("region");
 

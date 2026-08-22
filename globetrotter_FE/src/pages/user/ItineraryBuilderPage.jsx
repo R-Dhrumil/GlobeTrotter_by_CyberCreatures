@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { tripAPI, catalogAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
+import { InteractiveWorldMap } from '../../components/common/InteractiveWorldMap';
 import {
   Compass,
   MapPin,
@@ -150,6 +151,18 @@ export const ItineraryBuilderPage = () => {
       fetchTripDetails();
     } catch (err) {
       alert(err.message || 'Failed to reorder stops');
+    }
+  };
+
+  const handleSelectCityFromMap = async (city) => {
+    try {
+      await tripAPI.addStop(trip.id, { cityId: city.id });
+      fetchTripDetails();
+      try {
+        confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
+      } catch (e) {}
+    } catch (err) {
+      alert(err.message || 'Failed to add stop');
     }
   };
 
@@ -337,6 +350,17 @@ export const ItineraryBuilderPage = () => {
             }`}
           >
             Vertical Route Timeline
+          </button>
+          <button
+            onClick={() => setActiveTab('map')}
+            className={`pb-2 text-sm font-bold transition border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'map'
+                ? 'border-amber-600 text-amber-700'
+                : 'border-transparent text-stone-500 hover:text-stone-900'
+            }`}
+          >
+            <Globe className="w-4 h-4 text-amber-600" />
+            <span>Interactive World Map</span>
           </button>
           <button
             onClick={() => setActiveTab('guide')}
@@ -575,6 +599,26 @@ export const ItineraryBuilderPage = () => {
             </div>
           ))}
         </div>
+      ) : activeTab === 'map' ? (
+        /* Interactive World Map & Route Explorer */
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-2xl border border-stone-200 text-xs text-stone-600 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 font-medium">
+              <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Click any world city marker to preview iconic experiences and click <strong>"Add as Next Stop"</strong>!</span>
+            </div>
+            <span className="font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-xl shrink-0">
+              {trip.stops?.length || 0} Stopovers Connected on Flight Map
+            </span>
+          </div>
+
+          <InteractiveWorldMap
+            cities={catalogCities}
+            tripStops={trip.stops || []}
+            onSelectCityForStop={handleSelectCityFromMap}
+            height="580px"
+          />
+        </div>
       ) : (
         /* Full Travel Guide View */
         <div className="space-y-8 print:space-y-6">
@@ -772,10 +816,10 @@ export const ItineraryBuilderPage = () => {
               onChange={(e) => setSelectedCityId(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-sm text-stone-900 focus:outline-none focus:border-amber-600"
             >
-              <option value="">-- Choose a Global City --</option>
+              <option value="">-- Choose a Global City (Country &gt; State &gt; City) --</option>
               {catalogCities.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}, {c.country} ({c.region})
+                  {c.country} {c.state ? `→ ${c.state}` : ''} → {c.name}
                 </option>
               ))}
             </select>
