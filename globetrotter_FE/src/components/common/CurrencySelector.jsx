@@ -29,9 +29,9 @@ export const CurrencySelector = ({ compact = false }) => {
         title="Select Display Currency"
       >
         <span className="min-w-5 h-5 px-1 rounded-md bg-amber-500/10 text-amber-700 font-bold text-xs flex items-center justify-center border border-amber-500/20">
-          {activeCurrency.symbol || '₹'}
+          {activeCurrency?.symbol || '₹'}
         </span>
-        <span className="font-bold tracking-tight text-stone-900">{activeCurrency.code}</span>
+        <span className="font-bold tracking-tight text-stone-900">{activeCurrency?.code || 'INR'}</span>
         <ChevronDown className={`w-3.5 h-3.5 text-stone-500 transition-transform duration-200 ${isOpen ? 'rotate-180 text-amber-600' : ''}`} />
       </button>
 
@@ -54,7 +54,7 @@ export const CurrencySelector = ({ compact = false }) => {
           {/* Scrollable Items List */}
           <div className="p-1.5 max-h-60 overflow-y-auto space-y-0.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-stone-300 [&::-webkit-scrollbar-thumb]:rounded-full">
             {currencies.map((curr) => {
-              const isSelected = curr.code === activeCurrency.code;
+              const isSelected = curr.code === activeCurrency?.code;
               return (
                 <button
                   key={curr.code}

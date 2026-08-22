@@ -185,7 +185,7 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
         <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200/80 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-              <span className="font-bold text-xs text-emerald-600">{activeCurrency.symbol || '₹'}</span>
+              <span className="font-bold text-xs text-emerald-600">{activeCurrency?.symbol || '₹'}</span>
               <span>Budget & Cost Split</span>
             </span>
 
@@ -200,8 +200,8 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
           <div className="grid grid-cols-2 gap-2.5">
             <div>
               <label className="block text-[10px] font-bold text-stone-700 mb-0.5 flex items-center gap-1">
-                <span className="font-bold text-xs text-emerald-600">{activeCurrency.symbol || '₹'}</span>
-                <span>Total Estimated Budget ({activeCurrency.symbol})</span>
+                <span className="font-bold text-xs text-emerald-600">{activeCurrency?.symbol || '₹'}</span>
+                <span>Total Estimated Budget ({activeCurrency?.symbol || '₹'})</span>
               </label>
               <input
                 type="number"
