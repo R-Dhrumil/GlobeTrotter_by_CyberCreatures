@@ -9,9 +9,12 @@ import {
   AlertCircle,
   ShieldCheck,
   Server,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 export const AdminSmtp = () => {
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
   const [smtpSettings, setSmtpSettings] = useState({
     smtp_host: 'smtp.mailtrap.io',
     smtp_port: '2525',
@@ -157,13 +160,23 @@ export const AdminSmtp = () => {
                 <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">
                   SMTP Password / App Secret
                 </label>
-                <input
-                  type="password"
-                  placeholder="••••••••••••"
-                  value={smtpSettings.smtp_pass}
-                  onChange={(e) => setSmtpSettings({ ...smtpSettings, smtp_pass: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-none focus:border-amber-600"
-                />
+                <div className="relative">
+                  <input
+                    type={showSmtpPass ? 'text' : 'password'}
+                    placeholder="••••••••••••"
+                    value={smtpSettings.smtp_pass}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, smtp_pass: e.target.value })}
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-none focus:border-amber-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSmtpPass(!showSmtpPass)}
+                    className="absolute right-3.5 top-2.5 text-stone-400 hover:text-stone-600 focus:outline-none transition"
+                    title={showSmtpPass ? 'Hide Password' : 'Show Password'}
+                  >
+                    {showSmtpPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
 
