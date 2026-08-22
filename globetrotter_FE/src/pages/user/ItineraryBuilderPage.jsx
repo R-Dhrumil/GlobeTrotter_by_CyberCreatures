@@ -370,13 +370,30 @@ export const ItineraryBuilderPage = () => {
               <span>Edit Info</span>
             </button>
 
-            {trip.isPublic && trip.shareSlug && (
+            {trip.isPublic && trip.shareSlug ? (
               <button
                 onClick={handleCopyShareLink}
                 className="p-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white backdrop-blur-md transition flex items-center gap-1.5 text-xs font-semibold"
               >
                 {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
                 <span>{copiedLink ? 'Copied' : 'Share Link'}</span>
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  try {
+                    await tripAPI.makePublic(trip.id);
+                    showSuccess('Trip is now public! You can copy the share link.');
+                    fetchTripDetails();
+                  } catch (err) {
+                    showError(err.message || 'Failed to make trip public');
+                  }
+                }}
+                className="p-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-100 border border-emerald-500/30 backdrop-blur-md transition flex items-center gap-1.5 text-xs font-semibold"
+                title="Generate Public Link"
+              >
+                <Globe className="w-4 h-4" />
+                <span>Make Public</span>
               </button>
             )}
 

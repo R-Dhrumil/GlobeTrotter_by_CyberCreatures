@@ -170,47 +170,82 @@ export const getFeaturedDestinations = catchAsync(async (req, res) => {
  */
 export const getGallery = catchAsync(async (req, res) => {
   const { tag, search } = req.query;
+  const userId = req.user?.id; // from softAuthenticate
 
-  const citiesRes = await db.query('SELECT id, name, country, region, "imageUrl", description FROM "City"');
+  // 1. Fetch Spots (Sightseeing, Adventure, Nature) & Foods
   const activitiesRes = await db.query(
     `SELECT a.*, json_build_object('id', c.id, 'name', c.name, 'country', c.country) as city
      FROM "Activity" a
-     LEFT JOIN "City" c ON a."cityId" = c.id`
+     LEFT JOIN "City" c ON a."cityId" = c.id
+     WHERE a.category IN ('Sightseeing', 'Adventure', 'Nature', 'Food & Drink', 'Culinary')`
+  );
+
+  // 2. Fetch Public Trips
+  const tripsRes = await db.query(
+    `SELECT t.id, t.name, t.description, t."coverPhotoUrl", t."shareSlug",
+            json_build_object('id', u.id, 'name', u.name) as creator
+     FROM "Trip" t
+     LEFT JOIN "User" u ON t."userId" = u.id
+     WHERE t."isPublic" = true`
   );
 
   let galleryItems = [];
+  let likedItemsMap = {};
+  let savedTripsMap = {};
 
-  citiesRes.rows.forEach((c, index) => {
-    if (c.imageUrl) {
-      galleryItems.push({
-        id: `city-${c.id}`,
-        title: `${c.name}, ${c.country}`,
-        subtitle: `${c.region} Region`,
-        imageUrl: c.imageUrl,
-        tag: c.region,
-        category: 'Destination',
-        description: c.description,
-        heightRatio: index % 3 === 0 ? 'tall' : index % 2 === 0 ? 'medium' : 'square',
-        likesCount: 120 + index * 17,
-      });
-    }
-  });
+  if (userId) {
+    const likesRes = await db.query('SELECT "itemId", "itemType" FROM "LikedItem" WHERE "userId" = $1', [userId]);
+    likesRes.rows.forEach(row => {
+      likedItemsMap[`${row.itemType}-${row.itemId}`] = true;
+    });
+
+    const savesRes = await db.query('SELECT "tripId" FROM "SavedTrip" WHERE "userId" = $1', [userId]);
+    savesRes.rows.forEach(row => {
+      savedTripsMap[row.tripId] = true;
+    });
+  }
 
   activitiesRes.rows.forEach((a, index) => {
     if (a.imageUrl) {
+      const isFood = ['Food & Drink', 'Culinary'].includes(a.category);
       galleryItems.push({
-        id: `act-${a.id}`,
+        id: a.id,
+        itemType: 'ACTIVITY',
         title: a.name,
         subtitle: `${a.city?.name || 'World'}, ${a.city?.country || ''}`,
         imageUrl: a.imageUrl,
-        tag: a.category,
+        tag: isFood ? 'Food & Drink' : 'Spots',
         category: a.category,
         description: a.description,
         heightRatio: index % 2 === 0 ? 'tall' : 'medium',
         likesCount: 85 + index * 9,
+        isLiked: !!likedItemsMap[`ACTIVITY-${a.id}`],
       });
     }
   });
+
+  tripsRes.rows.forEach((t, index) => {
+    if (t.coverPhotoUrl) {
+      galleryItems.push({
+        id: t.id,
+        itemType: 'TRIP',
+        title: t.name,
+        subtitle: `Curated by ${t.creator?.name || 'Traveler'}`,
+        imageUrl: t.coverPhotoUrl,
+        tag: 'Public Trips',
+        category: 'Trip',
+        description: t.description,
+        shareSlug: t.shareSlug,
+        heightRatio: index % 3 === 0 ? 'tall' : 'square',
+        likesCount: 120 + index * 12,
+        isLiked: !!likedItemsMap[`TRIP-${t.id}`],
+        isSaved: !!savedTripsMap[t.id],
+      });
+    }
+  });
+
+  // Deterministic shuffle based on ID to avoid hydration issues, or just a simple sort
+  galleryItems.sort((a, b) => a.id.localeCompare(b.id));
 
   if (tag && tag !== 'ALL') {
     galleryItems = galleryItems.filter(
@@ -279,47 +314,3 @@ export const getPublicTrips = catchAsync(async (req, res) => {
 
   return ApiResponse.send(res, 200, { trips: tripsRes.rows }, 'Public trips retrieved');
 });
-
-const DEFAULT_CURRENCIES = [
-  { code: 'INR', name: 'Indian Rupee', symbol: '₹', ratePerInr: 1.0, isBase: true, enabled: true },
-  { code: 'USD', name: 'US Dollar', symbol: '$', ratePerInr: 0.012, isBase: false, enabled: true },
-  { code: 'EUR', name: 'Euro', symbol: '€', ratePerInr: 0.011, isBase: false, enabled: true },
-  { code: 'GBP', name: 'British Pound', symbol: '£', ratePerInr: 0.0095, isBase: false, enabled: true },
-  { code: 'AED', name: 'UAE Dirham', symbol: 'AED', ratePerInr: 0.044, isBase: false, enabled: true },
-  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', ratePerInr: 1.82, isBase: false, enabled: true },
-  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', ratePerInr: 0.018, isBase: false, enabled: true },
-  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', ratePerInr: 0.016, isBase: false, enabled: true },
-  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$', ratePerInr: 0.016, isBase: false, enabled: true },
-  { code: 'THB', name: 'Thai Baht', symbol: '฿', ratePerInr: 0.42, isBase: false, enabled: true },
-];
-
-/**
- * Get active currency settings & exchange rates
- */
-export const getCurrencies = catchAsync(async (req, res) => {
-  const resCurrency = await db.query('SELECT * FROM "SiteSetting" WHERE "group" = $1', ['CURRENCY']);
-  let baseCurrency = 'INR';
-  let currencies = DEFAULT_CURRENCIES;
-
-  resCurrency.rows.forEach((s) => {
-    if (s.key === 'currency_base') baseCurrency = s.value;
-    if (s.key === 'currency_rates') {
-      try {
-        const parsed = JSON.parse(s.value);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          currencies = parsed;
-        }
-      } catch (e) {
-        // Fallback to default list
-      }
-    }
-  });
-
-  return ApiResponse.send(
-    res,
-    200,
-    { baseCurrency, currencies, enabledCurrencies: currencies.filter((c) => c.enabled !== false) },
-    'Currencies retrieved successfully'
-  );
-});
-

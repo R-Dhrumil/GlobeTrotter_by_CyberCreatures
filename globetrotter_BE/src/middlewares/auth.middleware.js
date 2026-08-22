@@ -34,3 +34,29 @@ export const authenticate = catchAsync(async (req, res, next) => {
     throw error;
   }
 });
+
+export const softAuthenticate = catchAsync(async (req, res, next) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, env.JWT_SECRET);
+    const { rows } = await db.query('SELECT * FROM "User" WHERE id = $1', [decoded.id]);
+    const user = rows[0];
+
+    if (user && user.isActive) {
+      delete user.password;
+      req.user = user;
+    }
+  } catch (error) {
+    // Ignore invalid/expired tokens for soft auth
+  }
+  next();
+});

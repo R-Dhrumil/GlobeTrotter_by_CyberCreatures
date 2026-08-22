@@ -7,6 +7,7 @@ import {
   deleteTrip,
   getPublicTripBySlug,
   copyTrip,
+  makeTripPublic,
 } from '../controllers/trip.controller.js';
 import { addStop, updateStop, deleteStop, reorderStops } from '../controllers/stop.controller.js';
 import { addStopActivity, updateStopActivity, deleteStopActivity } from '../controllers/activity.controller.js';
@@ -37,6 +38,7 @@ router.post('/', createTrip);
 router.get('/my', getMyTrips);
 router.get('/:id', getTripById);
 router.put('/:id', updateTrip);
+router.put('/:id/public', makeTripPublic);
 router.delete('/:id', deleteTrip);
 router.post('/:id/copy', copyTrip);
 

@@ -55,6 +55,7 @@ export const tripAPI = {
   update: (id, data) => api.put(`/trips/${id}`, data),
   delete: (id) => api.delete(`/trips/${id}`),
   copy: (id) => api.post(`/trips/${id}/copy`),
+  makePublic: (id) => api.put(`/trips/${id}/public`),
   getPublic: (slug) => api.get(`/trips/share/${slug}`),
 
   // Stops
@@ -81,6 +82,8 @@ export const catalogAPI = {
   getActivities: (params) => api.get('/catalog/activities', { params }),
   getFeatured: () => api.get('/catalog/featured'),
   getGallery: (params) => api.get('/catalog/gallery', { params }),
+  toggleLike: (data) => api.post('/catalog/gallery/like', data),
+  toggleSaveTrip: (tripId) => api.post('/catalog/gallery/save', { tripId }),
   getPublicTrips: (params) => api.get('/catalog/public-trips', { params }),
   getCurrencies: () => api.get('/catalog/currencies'),
 };

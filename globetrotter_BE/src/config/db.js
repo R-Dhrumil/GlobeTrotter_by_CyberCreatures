@@ -55,6 +55,31 @@ export const connectDB = async () => {
       logger.warn('Could not run group travel migrations:', e.message);
     }
 
+    // Gallery social interactions migrations
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS "SavedTrip" (
+        "id" VARCHAR(64) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        "userId" VARCHAR(64) NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+        "tripId" VARCHAR(64) NOT NULL REFERENCES "Trip"("id") ON DELETE CASCADE,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE("userId", "tripId")
+      );`);
+      await pool.query('CREATE INDEX IF NOT EXISTS "idx_savedtrip_userId" ON "SavedTrip"("userId");');
+      
+      await pool.query(`CREATE TABLE IF NOT EXISTS "LikedItem" (
+        "id" VARCHAR(64) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        "userId" VARCHAR(64) NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+        "itemId" VARCHAR(64) NOT NULL,
+        "itemType" VARCHAR(20) NOT NULL,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE("userId", "itemId", "itemType")
+      );`);
+      await pool.query('CREATE INDEX IF NOT EXISTS "idx_likeditem_userId" ON "LikedItem"("userId");');
+      await pool.query('CREATE INDEX IF NOT EXISTS "idx_likeditem_item" ON "LikedItem"("itemId", "itemType");');
+    } catch (e) {
+      logger.warn('Could not run gallery social migrations:', e.message);
+    }
+
     return res;
   } catch (error) {
     logger.error('❌ PostgreSQL Connection Failed:', error.message);

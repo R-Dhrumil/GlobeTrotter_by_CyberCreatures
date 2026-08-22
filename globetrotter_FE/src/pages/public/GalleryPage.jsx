@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSeo } from '../../context/SeoContext';
+import { useNavigate } from 'react-router-dom';
 import { catalogAPI } from '../../api/client';
 import { Lightbox } from '../../components/common/Lightbox';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { Search, Heart, Maximize2, Tag, Filter, MapPin } from 'lucide-react';
+import { Search, Heart, Maximize2, Tag, Filter, MapPin, Bookmark } from 'lucide-react';
 
 export const GalleryPage = () => {
   const { seoConfig } = useSeo();
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTag, setSelectedTag] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeLightboxItem, setActiveLightboxItem] = useState(null);
   const [likedItems, setLikedItems] = useState({});
+  const [savedTrips, setSavedTrips] = useState({});
 
-  const filterTags = ['ALL', 'Asia', 'Europe', 'North America', 'Adventure', 'Culture', 'Nature', 'Food & Drink'];
+  const filterTags = ['ALL', 'Spots', 'Food & Drink', 'Public Trips'];
 
   useEffect(() => {
     fetchGallery();
@@ -30,6 +33,14 @@ export const GalleryPage = () => {
       });
       if (res.data?.items) {
         setItems(res.data.items);
+        const initialLikes = {};
+        const initialSaves = {};
+        res.data.items.forEach(item => {
+          if (item.isLiked) initialLikes[item.id] = true;
+          if (item.isSaved) initialSaves[item.id] = true;
+        });
+        setLikedItems(initialLikes);
+        setSavedTrips(initialSaves);
       }
     } catch (err) {
       console.error('Failed to load gallery items', err);
@@ -43,12 +54,37 @@ export const GalleryPage = () => {
     fetchGallery();
   };
 
-  const toggleLike = (id, e) => {
+  const toggleLike = async (item, e) => {
     e.stopPropagation();
-    setLikedItems((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+    const isLiked = !likedItems[item.id];
+    setLikedItems((prev) => ({ ...prev, [item.id]: isLiked }));
+    try {
+      await catalogAPI.toggleLike({ itemId: item.id, itemType: item.itemType });
+    } catch (err) {
+      // revert on error
+      setLikedItems((prev) => ({ ...prev, [item.id]: !isLiked }));
+    }
+  };
+
+  const toggleSave = async (item, e) => {
+    e.stopPropagation();
+    if (item.itemType !== 'TRIP') return;
+    const isSaved = !savedTrips[item.id];
+    setSavedTrips((prev) => ({ ...prev, [item.id]: isSaved }));
+    try {
+      await catalogAPI.toggleSaveTrip(item.id);
+    } catch (err) {
+      // revert on error
+      setSavedTrips((prev) => ({ ...prev, [item.id]: !isSaved }));
+    }
+  };
+
+  const handleCardClick = (item) => {
+    if (item.itemType === 'TRIP' && item.shareSlug) {
+      navigate(`/trips/share/${item.shareSlug}`);
+    } else {
+      setActiveLightboxItem(item);
+    }
   };
 
   return (
@@ -119,12 +155,13 @@ export const GalleryPage = () => {
           <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6">
             {items.map((item) => {
               const isLiked = likedItems[item.id];
+              const isSaved = savedTrips[item.id];
               const likes = (item.likesCount || 100) + (isLiked ? 1 : 0);
 
               return (
                 <div
-                  key={item.id}
-                  onClick={() => setActiveLightboxItem(item)}
+                  key={`${item.itemType}-${item.id}`}
+                  onClick={() => handleCardClick(item)}
                   className="masonry-item group relative rounded-3xl overflow-hidden shadow-soft hover:shadow-premium bg-stone-900 cursor-pointer border border-stone-200 transition-all duration-300 transform hover:-translate-y-1"
                 >
                   <img
@@ -141,14 +178,27 @@ export const GalleryPage = () => {
                       <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur-md">
                         {item.tag || item.category}
                       </span>
-                      <button
-                        onClick={(e) => toggleLike(item.id, e)}
-                        className={`p-2 rounded-full backdrop-blur-md transition ${
-                          isLiked ? 'bg-rose-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
-                      >
-                        <Heart className={`w-4 h-4 ${isLiked ? 'fill-white' : ''}`} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {item.itemType === 'TRIP' && (
+                          <button
+                            onClick={(e) => toggleSave(item, e)}
+                            className={`p-2 rounded-full backdrop-blur-md transition ${
+                              isSaved ? 'bg-amber-600 text-white' : 'bg-white/20 text-white hover:bg-white/30'
+                            }`}
+                            title="Save Trip"
+                          >
+                            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-white' : ''}`} />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => toggleLike(item, e)}
+                          className={`p-2 rounded-full backdrop-blur-md transition ${
+                            isLiked ? 'bg-rose-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'
+                          }`}
+                        >
+                          <Heart className={`w-4 h-4 ${isLiked ? 'fill-white' : ''}`} />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Bottom info row */}
@@ -163,8 +213,17 @@ export const GalleryPage = () => {
                       <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/20 text-[11px] text-stone-300">
                         <span>{likes} likes</span>
                         <span className="flex items-center gap-1 font-semibold text-amber-300">
-                          <Maximize2 className="w-3 h-3" />
-                          Expand
+                          {item.itemType === 'TRIP' ? (
+                            <>
+                              <Bookmark className="w-3 h-3" />
+                              View Trip
+                            </>
+                          ) : (
+                            <>
+                              <Maximize2 className="w-3 h-3" />
+                              Expand
+                            </>
+                          )}
                         </span>
                       </div>
                     </div>
