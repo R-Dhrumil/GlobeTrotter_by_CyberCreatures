@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useSeo } from '../../context/SeoContext';
 import { useNavigate } from 'react-router-dom';
 import { catalogAPI } from '../../api/client';
+import { winterDestinations } from '../../data/winterDestinations';
 import { Lightbox } from '../../components/common/Lightbox';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Search, Heart, Maximize2, Tag, Filter, MapPin, Bookmark } from 'lucide-react';
@@ -32,10 +33,27 @@ export const GalleryPage = () => {
         search: searchQuery || undefined,
       });
       if (res.data?.items) {
-        setItems(res.data.items);
+        let finalItems = res.data.items;
+
+        // Append hardcoded winter destinations
+        let winters = [...winterDestinations];
+        if (selectedTag !== 'ALL') {
+          winters = winters.filter(w => w.tag.toLowerCase() === selectedTag.toLowerCase() || w.category.toLowerCase() === selectedTag.toLowerCase());
+        }
+        if (searchQuery) {
+          const s = searchQuery.toLowerCase();
+          winters = winters.filter(w => w.title.toLowerCase().includes(s) || w.description.toLowerCase().includes(s));
+        }
+
+        finalItems = [...finalItems, ...winters];
+        
+        // Randomize
+        finalItems.sort(() => Math.random() - 0.5);
+
+        setItems(finalItems);
         const initialLikes = {};
         const initialSaves = {};
-        res.data.items.forEach(item => {
+        finalItems.forEach(item => {
           if (item.isLiked) initialLikes[item.id] = true;
           if (item.isSaved) initialSaves[item.id] = true;
         });
@@ -58,6 +76,11 @@ export const GalleryPage = () => {
     e.stopPropagation();
     const isLiked = !likedItems[item.id];
     setLikedItems((prev) => ({ ...prev, [item.id]: isLiked }));
+    
+    if (String(item.id).startsWith('mock-')) {
+      return; // Mock item, don't call API
+    }
+
     try {
       await catalogAPI.toggleLike({ itemId: item.id, itemType: item.itemType });
     } catch (err) {

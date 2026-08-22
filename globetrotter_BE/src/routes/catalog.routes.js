@@ -10,6 +10,7 @@ import {
   getCurrencies,
   toggleLike,
   toggleSaveTrip,
+  seedWinterGallery,
 } from '../controllers/catalog.controller.js';
 import { authenticate, softAuthenticate } from '../middlewares/auth.middleware.js';
 
@@ -23,6 +24,7 @@ router.get('/activities', getActivities);
 router.get('/featured', getFeaturedDestinations);
 router.get('/gallery', softAuthenticate, getGallery);
 router.get('/public-trips', getPublicTrips);
+router.post('/seed-winter', seedWinterGallery);
 
 // Protected social endpoints
 router.post('/gallery/like', authenticate, toggleLike);
