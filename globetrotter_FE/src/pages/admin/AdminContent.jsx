@@ -81,22 +81,28 @@ export const AdminContent = () => {
     if (city) {
       setEditingCity(city);
       setCityForm({
-        name: city.name,
-        country: city.country,
-        region: city.region,
-        costIndex: city.costIndex,
-        popularityScore: city.popularityScore,
-        imageUrl: city.imageUrl,
-        description: city.description,
+        name: city.name || '',
+        state: city.state || '',
+        country: city.country || '',
+        region: city.region || 'Asia',
+        costIndex: city.costIndex || 3,
+        popularityScore: city.popularityScore || 80,
+        lat: city.lat !== undefined ? city.lat : 0.0,
+        lng: city.lng !== undefined ? city.lng : 0.0,
+        imageUrl: city.imageUrl || '',
+        description: city.description || '',
       });
     } else {
       setEditingCity(null);
       setCityForm({
         name: '',
+        state: '',
         country: '',
-        region: 'Europe',
+        region: 'Asia',
         costIndex: 3,
         popularityScore: 90,
+        lat: 0.0,
+        lng: 0.0,
         imageUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80',
         description: '',
       });
@@ -276,7 +282,9 @@ export const AdminContent = () => {
                       />
                       <div>
                         <p className="font-bold text-stone-900 text-sm font-serif">{city.name}</p>
-                        <p className="text-[11px] text-stone-500">{city.country}</p>
+                        <p className="text-[11px] text-stone-500 font-medium">
+                          {city.state ? `${city.state}, ${city.country}` : city.country}
+                        </p>
                       </div>
                     </td>
 
@@ -398,7 +406,7 @@ export const AdminContent = () => {
         title={editingCity ? `Edit ${editingCity.name}` : 'Add New Master City'}
       >
         <form onSubmit={handleSaveCity} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
                 City Name *
@@ -408,6 +416,18 @@ export const AdminContent = () => {
                 required
                 value={cityForm.name}
                 onChange={(e) => setCityForm({ ...cityForm, name: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                State / Province
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Maharashtra, Tokyo Metropolis"
+                value={cityForm.state}
+                onChange={(e) => setCityForm({ ...cityForm, state: e.target.value })}
                 className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
               />
             </div>
@@ -441,6 +461,7 @@ export const AdminContent = () => {
                 <option value="Africa">Africa</option>
                 <option value="South America">South America</option>
                 <option value="Middle East">Middle East</option>
+                <option value="Oceania">Oceania</option>
               </select>
             </div>
             <div>
@@ -467,6 +488,35 @@ export const AdminContent = () => {
                 value={cityForm.popularityScore}
                 onChange={(e) => setCityForm({ ...cityForm, popularityScore: parseInt(e.target.value, 10) })}
                 className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                Latitude (Lat)
+              </label>
+              <input
+                type="number"
+                step="any"
+                placeholder="e.g. 19.0760"
+                value={cityForm.lat}
+                onChange={(e) => setCityForm({ ...cityForm, lat: parseFloat(e.target.value) })}
+                className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                Longitude (Lng)
+              </label>
+              <input
+                type="number"
+                step="any"
+                placeholder="e.g. 72.8777"
+                value={cityForm.lng}
+                onChange={(e) => setCityForm({ ...cityForm, lng: parseFloat(e.target.value) })}
+                className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs font-mono"
               />
             </div>
           </div>

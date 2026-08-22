@@ -213,22 +213,25 @@ export const deleteUser = catchAsync(async (req, res) => {
 // ==================== CITIES CRUD ====================
 
 export const createCity = catchAsync(async (req, res) => {
-  const { name, country, region, costIndex, popularityScore, imageUrl, description } = req.body;
+  const { name, state, country, region, costIndex, popularityScore, lat, lng, imageUrl, description } = req.body;
 
   if (!name || !country || !imageUrl || !description) {
     throw new ApiError(400, 'Name, country, imageUrl, and description are required');
   }
 
   const insertRes = await db.query(
-    `INSERT INTO "City" (id, name, country, region, "costIndex", "popularityScore", "imageUrl", description, "updatedAt")
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, NOW())
+    `INSERT INTO "City" (id, name, state, country, region, "costIndex", "popularityScore", lat, lng, "imageUrl", description, "updatedAt")
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
      RETURNING *`,
     [
       name.trim(),
+      state ? state.trim() : '',
       country.trim(),
       region || 'Global',
       costIndex ? parseInt(costIndex, 10) : 3,
       popularityScore ? parseInt(popularityScore, 10) : 80,
+      lat ? parseFloat(lat) : 0.0,
+      lng ? parseFloat(lng) : 0.0,
       imageUrl,
       description,
     ]
@@ -239,7 +242,7 @@ export const createCity = catchAsync(async (req, res) => {
 
 export const updateCity = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const { name, country, region, costIndex, popularityScore, imageUrl, description } = req.body;
+  const { name, state, country, region, costIndex, popularityScore, lat, lng, imageUrl, description } = req.body;
 
   const fields = [];
   const values = [];
@@ -248,6 +251,10 @@ export const updateCity = catchAsync(async (req, res) => {
   if (name) {
     fields.push(`name = $${idx++}`);
     values.push(name.trim());
+  }
+  if (state !== undefined) {
+    fields.push(`state = $${idx++}`);
+    values.push(state ? state.trim() : '');
   }
   if (country) {
     fields.push(`country = $${idx++}`);
@@ -264,6 +271,14 @@ export const updateCity = catchAsync(async (req, res) => {
   if (popularityScore !== undefined) {
     fields.push(`"popularityScore" = $${idx++}`);
     values.push(parseInt(popularityScore, 10));
+  }
+  if (lat !== undefined) {
+    fields.push(`lat = $${idx++}`);
+    values.push(parseFloat(lat));
+  }
+  if (lng !== undefined) {
+    fields.push(`lng = $${idx++}`);
+    values.push(parseFloat(lng));
   }
   if (imageUrl) {
     fields.push(`"imageUrl" = $${idx++}`);
