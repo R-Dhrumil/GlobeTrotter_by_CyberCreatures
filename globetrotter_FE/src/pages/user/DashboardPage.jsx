@@ -21,7 +21,7 @@ import {
 
 export const DashboardPage = () => {
   const { user } = useAuth();
-  const { formatPrice } = useCurrency();
+  const { formatPrice, activeCurrency } = useCurrency();
   const navigate = useNavigate();
 
   const [trips, setTrips] = useState([]);
