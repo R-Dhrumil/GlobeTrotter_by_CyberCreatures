@@ -6,11 +6,10 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { env } from '../config/env.js';
 import { sendEmail } from '../utils/email.js';
-import { otpTemplate } from '../utils/emailTemplates.js';
 
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN,
+    expiresIn: env.JWT_EXPIRES_IN || '7d',
   });
 };
 
@@ -18,7 +17,7 @@ const generateToken = (userId) => {
  * Register a new user
  */
 export const register = catchAsync(async (req, res) => {
-  const { name, email, password, role, department } = req.body;
+  const { name, email, password, photoUrl, languagePref } = req.body;
 
   if (!name || !email || !password) {
     throw new ApiError(400, 'Name, email, and password are required');
@@ -33,22 +32,24 @@ export const register = catchAsync(async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
     data: {
-      name,
+      name: name.trim(),
       email: cleanEmail,
       password: hashedPassword,
-      role: role || 'USER',
-      department: department || 'General',
+      role: 'USER',
+      photoUrl: photoUrl || '',
+      languagePref: languagePref || 'en',
+      status: 'ACTIVE',
     },
   });
 
   const token = generateToken(user.id);
-  delete user.password;
+  const { password: _, ...safeUser } = user;
 
-  return ApiResponse.send(res, 201, { user, token }, 'Registration successful');
+  return ApiResponse.send(res, 201, { user: safeUser, token }, 'Registration successful');
 });
 
 /**
- * Standard Email & Password Login
+ * Login with email and password
  */
 export const login = catchAsync(async (req, res) => {
   const { email, password } = req.body;
@@ -63,31 +64,114 @@ export const login = catchAsync(async (req, res) => {
     throw new ApiError(401, 'Invalid email or password');
   }
 
-  if (!user.isActive) {
-    throw new ApiError(403, 'Account is deactivated. Contact admin.');
+  if (user.status === 'SUSPENDED' || user.isActive === false) {
+    throw new ApiError(403, 'Account is suspended or inactive. Please contact support.');
   }
 
   const token = generateToken(user.id);
-  delete user.password;
+  const { password: _, ...safeUser } = user;
 
-  return ApiResponse.send(res, 200, { user, token }, 'Login successful');
+  return ApiResponse.send(res, 200, { user: safeUser, token }, 'Login successful');
 });
 
 /**
- * Send 6-Digit Email OTP (Dev-Friendly with Terminal Fallback)
+ * Get current authenticated user profile
  */
-export const sendOtp = catchAsync(async (req, res) => {
-  const { email, name } = req.body;
+export const getMe = catchAsync(async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      photoUrl: true,
+      languagePref: true,
+      status: true,
+      department: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
+  return ApiResponse.send(res, 200, { user }, 'User profile retrieved');
+});
+
+/**
+ * Update current user profile
+ */
+export const updateProfile = catchAsync(async (req, res) => {
+  const { name, photoUrl, languagePref, department } = req.body;
+
+  const updated = await prisma.user.update({
+    where: { id: req.user.id },
+    data: {
+      ...(name && { name: name.trim() }),
+      ...(photoUrl !== undefined && { photoUrl }),
+      ...(languagePref && { languagePref }),
+      ...(department && { department }),
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      photoUrl: true,
+      languagePref: true,
+      status: true,
+      department: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return ApiResponse.send(res, 200, { user: updated }, 'Profile updated successfully');
+});
+
+/**
+ * Change user password
+ */
+export const changePassword = catchAsync(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    throw new ApiError(400, 'Current and new password are required');
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    throw new ApiError(400, 'Incorrect current password');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: req.user.id },
+    data: { password: hashedPassword },
+  });
+
+  return ApiResponse.send(res, 200, null, 'Password updated successfully');
+});
+
+/**
+ * Forgot Password - Send OTP code
+ */
+export const forgotPassword = catchAsync(async (req, res) => {
+  const { email } = req.body;
   if (!email) {
-    throw new ApiError(400, 'Email is required to send OTP');
+    throw new ApiError(400, 'Email is required');
   }
 
   const cleanEmail = email.toLowerCase().trim();
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+  const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+  if (!user) {
+    // For security, respond standard message even if user doesn't exist
+    return ApiResponse.send(res, 200, { email: cleanEmail }, 'If an account exists, a reset code has been sent.');
+  }
 
-  // Clear previous OTPs for this email and save new one
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
   await prisma.otp.deleteMany({ where: { email: cleanEmail } });
   await prisma.otp.create({
     data: {
@@ -97,38 +181,39 @@ export const sendOtp = catchAsync(async (req, res) => {
     },
   });
 
-  // Terminal Dev Banner (Zero-config instant testing in hackathons)
-  console.log('\n--------------------------------------------------');
-  console.log(`🔑 [HACKATHON OTP]: ${otpCode}  (Email: ${cleanEmail})`);
-  console.log('--------------------------------------------------\n');
+  console.log(`\n🔑 [GLOBETROTTER PASSWORD RESET OTP]: ${otpCode} for ${cleanEmail}\n`);
 
-  // Attempt Email Dispatch
-  await sendEmail({
-    to: cleanEmail,
-    subject: `Your Verification Code: ${otpCode}`,
-    html: otpTemplate({ name: name || cleanEmail.split('@')[0], otp: otpCode }),
-  });
+  try {
+    await sendEmail({
+      to: cleanEmail,
+      subject: `GlobeTrotter - Password Reset Code: ${otpCode}`,
+      html: `<div style="font-family:sans-serif;padding:20px;">
+        <h2>Password Reset Request</h2>
+        <p>Hi ${user.name},</p>
+        <p>Use the 6-digit code below to reset your GlobeTrotter account password:</p>
+        <div style="font-size:24px;font-weight:bold;letter-spacing:4px;color:#d97706;padding:12px;background:#fef3c7;display:inline-block;border-radius:8px;">${otpCode}</div>
+        <p>This code will expire in 15 minutes.</p>
+      </div>`,
+    });
+  } catch (err) {
+    console.log('⚠️ Notice: Could not send email, check terminal for OTP.');
+  }
 
-  return ApiResponse.send(
-    res,
-    200,
-    { email: cleanEmail },
-    'Verification code sent successfully (Check email or terminal in development mode)'
-  );
+  return ApiResponse.send(res, 200, { email: cleanEmail }, 'Reset code generated successfully');
 });
 
 /**
- * Verify OTP & Passwordless Login/Register
+ * Reset Password with OTP
  */
-export const verifyOtp = catchAsync(async (req, res) => {
-  const { email, otp, name } = req.body;
+export const resetPassword = catchAsync(async (req, res) => {
+  const { email, otp, newPassword } = req.body;
 
-  if (!email || !otp) {
-    throw new ApiError(400, 'Email and OTP are required');
+  if (!email || !otp || !newPassword) {
+    throw new ApiError(400, 'Email, OTP, and new password are required');
   }
 
   const cleanEmail = email.toLowerCase().trim();
-  const otpRecord = await prisma.otp.findFirst({
+  const validOtp = await prisma.otp.findFirst({
     where: {
       email: cleanEmail,
       otp: otp.trim(),
@@ -136,48 +221,17 @@ export const verifyOtp = catchAsync(async (req, res) => {
     },
   });
 
-  if (!otpRecord) {
-    throw new ApiError(400, 'Invalid or expired OTP verification code');
+  if (!validOtp) {
+    throw new ApiError(400, 'Invalid or expired reset code');
   }
 
-  // Delete used OTP
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { email: cleanEmail },
+    data: { password: hashedPassword },
+  });
+
   await prisma.otp.deleteMany({ where: { email: cleanEmail } });
 
-  // Find or auto-provision user
-  let user = await prisma.user.findUnique({ where: { email: cleanEmail } });
-  let isNewUser = false;
-
-  if (!user) {
-    isNewUser = true;
-    const randomPassword = await bcrypt.hash(Math.random().toString(36).slice(-10) + 'A1!', 10);
-    user = await prisma.user.create({
-      data: {
-        name: name || cleanEmail.split('@')[0],
-        email: cleanEmail,
-        password: randomPassword,
-        role: 'USER',
-      },
-    });
-  }
-
-  if (!user.isActive) {
-    throw new ApiError(403, 'Account is deactivated.');
-  }
-
-  const token = generateToken(user.id);
-  delete user.password;
-
-  return ApiResponse.send(
-    res,
-    200,
-    { user, token, isNewUser },
-    isNewUser ? 'User verified & account created' : 'OTP verified & login successful'
-  );
-});
-
-/**
- * Get Current Authenticated User Profile
- */
-export const getMe = catchAsync(async (req, res) => {
-  return ApiResponse.send(res, 200, { user: req.user }, 'Current user profile retrieved');
+  return ApiResponse.send(res, 200, null, 'Password has been reset successfully. You can now login.');
 });

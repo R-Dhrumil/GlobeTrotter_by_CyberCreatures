@@ -75,8 +75,9 @@ app.use(
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/docs.json', (req, res) => res.json(swaggerSpec));
 
-// API Routes Mount
+// API Routes Mount (support both /api and /api/v1)
 app.use('/api/v1', routes);
+app.use('/api', routes);
 
 // Catch-all 404 handler (Guarantees JSON response for invalid frontend endpoints)
 app.use('*', (req, res, next) => {
