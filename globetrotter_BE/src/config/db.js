@@ -20,6 +20,14 @@ export const connectDB = async () => {
   try {
     const res = await pool.query('SELECT NOW()');
     logger.success('✅ PostgreSQL Database Connected via pg (node-postgres)');
+    
+    // Ensure lastLoginAt column exists on User table for first-time login detection
+    try {
+      await pool.query('ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastLoginAt" TIMESTAMP WITH TIME ZONE;');
+    } catch (e) {
+      logger.warn('Could not run column migration for User.lastLoginAt:', e.message);
+    }
+
     return res;
   } catch (error) {
     logger.error('❌ PostgreSQL Connection Failed:', error.message);

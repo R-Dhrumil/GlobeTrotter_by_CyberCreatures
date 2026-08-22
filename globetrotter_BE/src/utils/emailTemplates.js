@@ -103,3 +103,43 @@ export const notificationAlertTemplate = ({ name, title, message, actionUrl, act
     }
   `);
 };
+
+/**
+ * Welcome Email Template for New Explorer Registration
+ */
+export const welcomeEmailTemplate = ({ name, email }) => {
+  return baseWrapper(`
+    <span class="badge" style="background:#fef3c7; color:#d97706;">🌍 Welcome to GlobeTrotter</span>
+    <h2>Welcome to the Community, ${name || 'Explorer'}! 🎉</h2>
+    <p>Thank you for creating your GlobeTrotter account. We're thrilled to have you join our global travel community!</p>
+    <div class="info-box" style="border-left-color: #d97706;">
+      <p style="margin:4px 0;"><strong>Account Email:</strong> ${email}</p>
+      <p style="margin:4px 0;"><strong>Status:</strong> Active Explorer</p>
+    </div>
+    <p>With GlobeTrotter, you can:</p>
+    <ul style="color: #4b5563; padding-left: 20px; line-height: 1.8;">
+      <li>✈️ Build custom multi-city travel itineraries</li>
+      <li>📊 Track real-time travel budgets & expenses</li>
+      <li>🗺️ Discover curated destinations and local hidden gems</li>
+      <li>👥 Invite travel partners and collaborate on group trips</li>
+    </ul>
+    <p style="font-size: 14px; color: #6b7280; margin-top: 20px;">Get started by logging in and planning your next dream adventure!</p>
+  `);
+};
+
+/**
+ * First-Time Login Alert Email Template
+ */
+export const firstTimeLoginTemplate = ({ name, loginTime }) => {
+  return baseWrapper(`
+    <span class="badge" style="background:#ecfdf5; color:#059669;">🔒 First Sign-In Detected</span>
+    <h2>First Time Login Successful! 🚀</h2>
+    <p>Hi ${name || 'Explorer'},</p>
+    <p>We noticed a first-time sign-in to your GlobeTrotter account on <strong>${loginTime || new Date().toLocaleString()}</strong>.</p>
+    <div class="info-box" style="border-left-color: #10b981;">
+      <p style="margin:4px 0;"><strong>Notification:</strong> Initial account authentication confirmed.</p>
+      <p style="margin:4px 0;"><strong>Security Note:</strong> If this was you, no action is needed! Start exploring your dashboard.</p>
+    </div>
+    <p>If you did not authorize this login, please reset your password immediately using the Forgot Password option.</p>
+  `);
+};
