@@ -23,6 +23,8 @@ import { CitySearchPage } from './pages/user/CitySearchPage';
 import { ActivitySearchPage } from './pages/user/ActivitySearchPage';
 import { BudgetPage } from './pages/user/BudgetPage';
 import { UserProfilePage } from './pages/user/UserProfilePage';
+import { GroupTripPage } from './pages/user/GroupTripPage';
+import { JoinGroupPage } from './pages/user/JoinGroupPage';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -115,6 +117,22 @@ export const App = () => {
           element={
             <ProtectedRoute>
               <UserProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/trips/:id/group"
+          element={
+            <ProtectedRoute>
+              <GroupTripPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/group/join/:token"
+          element={
+            <ProtectedRoute>
+              <JoinGroupPage />
             </ProtectedRoute>
           }
         />

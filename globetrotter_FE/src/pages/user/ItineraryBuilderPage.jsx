@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { tripAPI, catalogAPI } from '../../api/client';
+import { tripAPI, catalogAPI, groupAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
@@ -30,7 +30,6 @@ import {
   Info,
   Navigation,
   ShieldAlert,
-  Loader2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -379,6 +378,32 @@ export const ItineraryBuilderPage = () => {
               <DollarSign className="w-4 h-4" />
               <span>Budget Analyzer</span>
             </Link>
+
+            {trip.isGroupTrip ? (
+              <Link
+                to={`/app/trips/${trip.id}/group`}
+                className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5"
+              >
+                <Users className="w-4 h-4" />
+                <span>Group ({trip.groupMemberCount})</span>
+              </Link>
+            ) : (
+              <button
+                onClick={async () => {
+                  try {
+                    await groupAPI.enableGroup(trip.id);
+                    showSuccess('Group travel enabled! You can now invite members.');
+                    fetchTripDetails();
+                  } catch (err) {
+                    showError(err.message || 'Failed to enable group travel');
+                  }
+                }}
+                className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white backdrop-blur-md font-bold text-xs transition flex items-center gap-1.5"
+              >
+                <Users className="w-4 h-4" />
+                <span>Enable Group</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

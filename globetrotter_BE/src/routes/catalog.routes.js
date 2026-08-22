@@ -6,6 +6,7 @@ import {
   getFeaturedDestinations,
   getGallery,
   getHierarchy,
+  getPublicTrips,
 } from '../controllers/catalog.controller.js';
 
 const router = Router();
@@ -16,5 +17,6 @@ router.get('/cities/:id', getCityById);
 router.get('/activities', getActivities);
 router.get('/featured', getFeaturedDestinations);
 router.get('/gallery', getGallery);
+router.get('/public-trips', getPublicTrips);
 
 export default router;

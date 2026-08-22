@@ -112,7 +112,7 @@ export const getMe = catchAsync(async (req, res) => {
  * Update current user profile
  */
 export const updateProfile = catchAsync(async (req, res) => {
-  const { name, photoUrl, languagePref, department } = req.body;
+  const { name, photoUrl, languagePref, department, currency, country } = req.body;
 
   const fields = [];
   const values = [];
@@ -134,6 +134,14 @@ export const updateProfile = catchAsync(async (req, res) => {
     fields.push(`department = $${paramIdx++}`);
     values.push(department);
   }
+  if (currency !== undefined) {
+    fields.push(`currency = $${paramIdx++}`);
+    values.push(currency);
+  }
+  if (country !== undefined) {
+    fields.push(`country = $${paramIdx++}`);
+    values.push(country);
+  }
 
   if (fields.length === 0) {
     throw new ApiError(400, 'No fields provided to update');
@@ -142,7 +150,7 @@ export const updateProfile = catchAsync(async (req, res) => {
   fields.push(`"updatedAt" = NOW()`);
   values.push(req.user.id);
 
-  const queryText = `UPDATE "User" SET ${fields.join(', ')} WHERE id = $${paramIdx} RETURNING id, name, email, role, "photoUrl", "languagePref", status, department, "createdAt", "updatedAt"`;
+  const queryText = `UPDATE "User" SET ${fields.join(', ')} WHERE id = $${paramIdx} RETURNING id, name, email, role, "photoUrl", "languagePref", status, department, currency, country, "createdAt", "updatedAt"`;
   const updateRes = await db.query(queryText, values);
 
   return ApiResponse.send(res, 200, { user: updateRes.rows[0] }, 'Profile updated successfully');

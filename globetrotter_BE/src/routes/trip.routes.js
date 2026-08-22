@@ -11,6 +11,18 @@ import {
 import { addStop, updateStop, deleteStop, reorderStops } from '../controllers/stop.controller.js';
 import { addStopActivity, updateStopActivity, deleteStopActivity } from '../controllers/activity.controller.js';
 import { getTripBudgets, upsertBudgetCategory, deleteBudget } from '../controllers/budget.controller.js';
+import {
+  enableGroupTrip,
+  getInviteLink,
+  joinGroupTrip,
+  validateInviteToken,
+  getGroupMembers,
+  removeGroupMember,
+  addGroupExpense,
+  getGroupExpenses,
+  deleteGroupExpense,
+  getGroupSettlement,
+} from '../controllers/group.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -44,4 +56,17 @@ router.get('/:tripId/budget', getTripBudgets);
 router.post('/:tripId/budget', upsertBudgetCategory);
 router.delete('/budget/:id', deleteBudget);
 
+// Group Travel
+router.post('/:tripId/group/enable', enableGroupTrip);
+router.get('/:tripId/group/invite-link', getInviteLink);
+router.post('/group/join/:token', joinGroupTrip);
+router.get('/group/validate/:token', validateInviteToken);
+router.get('/:tripId/group/members', getGroupMembers);
+router.delete('/:tripId/group/members/:userId', removeGroupMember);
+router.post('/:tripId/group/expenses', addGroupExpense);
+router.get('/:tripId/group/expenses', getGroupExpenses);
+router.delete('/:tripId/group/expenses/:expenseId', deleteGroupExpense);
+router.get('/:tripId/group/settlement', getGroupSettlement);
+
 export default router;
+

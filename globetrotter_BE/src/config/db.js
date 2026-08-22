@@ -28,6 +28,33 @@ export const connectDB = async () => {
       logger.warn('Could not run column migration for User.lastLoginAt:', e.message);
     }
 
+    // Group Travel feature migrations
+    try {
+      await pool.query('ALTER TABLE "Trip" ADD COLUMN IF NOT EXISTS "inviteToken" VARCHAR(64) UNIQUE;');
+      await pool.query('ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "currency" VARCHAR(10) DEFAULT \'USD\';');
+      await pool.query('ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "country" VARCHAR(100) DEFAULT \'\';');
+      await pool.query(`CREATE TABLE IF NOT EXISTS "GroupMember" (
+        "id" VARCHAR(64) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        "tripId" VARCHAR(64) NOT NULL REFERENCES "Trip"("id") ON DELETE CASCADE,
+        "userId" VARCHAR(64) NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+        "role" VARCHAR(20) DEFAULT 'MEMBER',
+        "joinedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE("tripId", "userId")
+      );`);
+      await pool.query(`CREATE TABLE IF NOT EXISTS "GroupExpense" (
+        "id" VARCHAR(64) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        "tripId" VARCHAR(64) NOT NULL REFERENCES "Trip"("id") ON DELETE CASCADE,
+        "paidByUserId" VARCHAR(64) NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+        "category" VARCHAR(50) NOT NULL DEFAULT 'OTHER',
+        "amount" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+        "description" TEXT DEFAULT '',
+        "expenseDate" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );`);
+    } catch (e) {
+      logger.warn('Could not run group travel migrations:', e.message);
+    }
+
     return res;
   } catch (error) {
     logger.error('❌ PostgreSQL Connection Failed:', error.message);

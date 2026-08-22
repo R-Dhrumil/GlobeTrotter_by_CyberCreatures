@@ -257,3 +257,25 @@ export const getHierarchy = catchAsync(async (req, res) => {
 
   return ApiResponse.send(res, 200, { hierarchy }, 'Location hierarchy retrieved');
 });
+
+/**
+ * Get public trips for the homepage explore section
+ */
+export const getPublicTrips = catchAsync(async (req, res) => {
+  const { limit = 8 } = req.query;
+
+  const tripsRes = await db.query(
+    `SELECT t.id, t.name, t.description, t."coverPhotoUrl", t."startDate", t."endDate", t."shareSlug", t."createdAt",
+            json_build_object('id', u.id, 'name', u.name, 'photoUrl', u."photoUrl") as creator,
+            (SELECT COUNT(*) FROM "Stop" s WHERE s."tripId" = t.id) as "stopCount",
+            (SELECT COUNT(*) FROM "GroupMember" gm WHERE gm."tripId" = t.id) as "groupMemberCount"
+     FROM "Trip" t
+     LEFT JOIN "User" u ON t."userId" = u.id
+     WHERE t."isPublic" = true
+     ORDER BY t."createdAt" DESC
+     LIMIT $1`,
+    [parseInt(limit)]
+  );
+
+  return ApiResponse.send(res, 200, { trips: tripsRes.rows }, 'Public trips retrieved');
+});

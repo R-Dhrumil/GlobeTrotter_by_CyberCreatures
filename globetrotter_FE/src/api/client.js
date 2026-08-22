@@ -81,6 +81,7 @@ export const catalogAPI = {
   getActivities: (params) => api.get('/catalog/activities', { params }),
   getFeatured: () => api.get('/catalog/featured'),
   getGallery: (params) => api.get('/catalog/gallery', { params }),
+  getPublicTrips: (params) => api.get('/catalog/public-trips', { params }),
 };
 
 export const contactAPI = {
@@ -118,6 +119,19 @@ export const adminAPI = {
   getSettings: (group) => api.get('/admin/settings', { params: { group } }),
   updateSettings: (settings, group) => api.post('/admin/settings', { settings, group }),
   testSmtp: (data) => api.post('/admin/smtp/test', data),
+};
+
+export const groupAPI = {
+  enableGroup: (tripId) => api.post(`/trips/${tripId}/group/enable`),
+  getInviteLink: (tripId) => api.get(`/trips/${tripId}/group/invite-link`),
+  joinGroup: (token) => api.post(`/trips/group/join/${token}`),
+  validateInvite: (token) => api.get(`/trips/group/validate/${token}`),
+  getMembers: (tripId) => api.get(`/trips/${tripId}/group/members`),
+  removeMember: (tripId, userId) => api.delete(`/trips/${tripId}/group/members/${userId}`),
+  addExpense: (tripId, data) => api.post(`/trips/${tripId}/group/expenses`, data),
+  getExpenses: (tripId) => api.get(`/trips/${tripId}/group/expenses`),
+  deleteExpense: (tripId, expenseId) => api.delete(`/trips/${tripId}/group/expenses/${expenseId}`),
+  getSettlement: (tripId) => api.get(`/trips/${tripId}/group/settlement`),
 };
 
 export default api;

@@ -20,6 +20,7 @@ import {
   Grid,
   List,
   Check,
+  Users,
 } from 'lucide-react';
 
 export const MyTripsPage = () => {
@@ -204,6 +205,12 @@ export const MyTripsPage = () => {
                       <DollarSign className="w-3.5 h-3.5" />
                       ${trip.budgets?.reduce((acc, b) => acc + (b.estimatedAmount || 0), 0) || 0} budget
                     </span>
+                    {trip.isGroupTrip && (
+                      <span className="flex items-center gap-1 font-semibold text-sky-700">
+                        <Users className="w-3.5 h-3.5" />
+                        {trip.groupMemberCount} members
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-xs text-stone-500 line-clamp-2">
@@ -219,6 +226,16 @@ export const MyTripsPage = () => {
                 >
                   Itinerary Builder
                 </Link>
+
+                {trip.isGroupTrip && (
+                  <Link
+                    to={`/app/trips/${trip.id}/group`}
+                    className="p-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-600 transition"
+                    title="Group Dashboard"
+                  >
+                    <Users className="w-4 h-4" />
+                  </Link>
+                )}
 
                 <Link
                   to={`/app/trips/${trip.id}/budget`}

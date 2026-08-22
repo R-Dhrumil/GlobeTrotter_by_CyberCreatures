@@ -15,12 +15,16 @@ import {
   Search,
   CheckCircle2,
   TrendingUp,
+  Users,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 export const HomePage = () => {
   const { seoConfig } = useSeo();
   const [featuredCities, setFeaturedCities] = useState([]);
+  const [publicTrips, setPublicTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -40,7 +44,19 @@ export const HomePage = () => {
     };
 
     fetchFeatured();
+    fetchPublicTrips();
   }, []);
+
+  const fetchPublicTrips = async () => {
+    try {
+      const res = await catalogAPI.getPublicTrips({ limit: 6 });
+      if (res.data?.trips) {
+        setPublicTrips(res.data.trips);
+      }
+    } catch (err) {
+      console.error('Failed to load public trips', err);
+    }
+  };
 
   const handleHeroSearch = (e) => {
     e.preventDefault();
@@ -276,6 +292,84 @@ export const HomePage = () => {
           </div>
         </div>
       </section>
+
+      {/* 4. EXPLORE PUBLIC TRIPS SECTION */}
+      {publicTrips.length > 0 && (
+        <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <span className="inline-block px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-xs font-bold uppercase tracking-wider mb-4 border border-sky-200">
+              Community Itineraries
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold font-serif text-stone-900 mb-4">
+              Explore Pre-Planned Trips
+            </h2>
+            <p className="text-stone-600 text-sm max-w-2xl mx-auto leading-relaxed">
+              Browse itineraries shared by fellow travelers. Get inspired, copy a trip, and customize it for your own adventure.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {publicTrips.map((trip) => (
+              <Link
+                key={trip.id}
+                to={`/trips/share/${trip.shareSlug}`}
+                className="group bg-white rounded-3xl overflow-hidden border border-stone-200/80 shadow-soft hover:shadow-premium transition flex flex-col"
+              >
+                <div className="relative h-44 overflow-hidden bg-stone-900">
+                  <img
+                    src={trip.coverPhotoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'}
+                    alt={trip.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/30 to-transparent" />
+
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                    {parseInt(trip.groupMemberCount) > 0 && (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-200 backdrop-blur-md border border-sky-400/30 flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {trip.groupMemberCount}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="absolute bottom-3 left-4 right-4 text-white">
+                    <h3 className="text-lg font-bold font-serif leading-snug">{trip.name}</h3>
+                    {trip.startDate && (
+                      <p className="text-xs text-stone-300 flex items-center gap-1 mt-1">
+                        <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                        {new Date(trip.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <p className="text-xs text-stone-500 line-clamp-2 mb-3">
+                    {trip.description || 'A curated travel itinerary shared by a fellow GlobeTrotter.'}
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold text-[10px] shrink-0">
+                        {trip.creator?.photoUrl ? (
+                          <img src={trip.creator.photoUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                          trip.creator?.name?.charAt(0)?.toUpperCase() || '?'
+                        )}
+                      </div>
+                      <span className="text-xs font-medium text-stone-600">{trip.creator?.name || 'Traveler'}</span>
+                    </div>
+                    <span className="text-xs font-semibold text-stone-500 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                      {trip.stopCount || 0} stops
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 4. CALL TO ACTION BANNER */}
       <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
