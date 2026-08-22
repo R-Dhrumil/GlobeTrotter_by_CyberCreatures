@@ -26,9 +26,12 @@ export const CitySearchPage = () => {
   const initialSearch = queryParams.get('search') || '';
 
   const [cities, setCities] = useState([]);
+  const [hierarchy, setHierarchy] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(initialSearch);
   const [region, setRegion] = useState('ALL');
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedState, setSelectedState] = useState('');
   const [costIndex, setCostIndex] = useState('');
   const [sortBy, setSortBy] = useState('popularity');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
@@ -43,8 +46,21 @@ export const CitySearchPage = () => {
   const regions = ['ALL', 'Asia', 'Europe', 'North America', 'Africa', 'South America', 'Middle East'];
 
   useEffect(() => {
+    fetchHierarchy();
+  }, []);
+
+  useEffect(() => {
     fetchCities();
-  }, [region, costIndex, sortBy]);
+  }, [region, selectedCountry, selectedState, costIndex, sortBy]);
+
+  const fetchHierarchy = async () => {
+    try {
+      const res = await catalogAPI.getHierarchy();
+      if (res.data?.hierarchy) {
+        setHierarchy(res.data.hierarchy);
+      }
+    } catch (e) {}
+  };
 
   const fetchCities = async () => {
     setLoading(true);
@@ -52,6 +68,8 @@ export const CitySearchPage = () => {
       const res = await catalogAPI.getCities({
         search: search || undefined,
         region: region !== 'ALL' ? region : undefined,
+        country: selectedCountry || undefined,
+        state: selectedState || undefined,
         costIndex: costIndex || undefined,
         sortBy,
       });
@@ -136,6 +154,66 @@ export const CitySearchPage = () => {
             Search Catalog
           </button>
         </form>
+
+        {/* Cascading Country -> State Location Selectors */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-stone-100">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">
+              1. Country Filter
+            </label>
+            <select
+              value={selectedCountry}
+              onChange={(e) => {
+                setSelectedCountry(e.target.value);
+                setSelectedState('');
+              }}
+              className="w-full px-3 py-2 rounded-xl bg-stone-100 border border-stone-200 text-xs text-stone-900 focus:outline-none focus:border-amber-600 font-semibold"
+            >
+              <option value="">-- All Countries --</option>
+              {hierarchy.map((h) => (
+                <option key={h.country} value={h.country}>
+                  {h.country} ({h.states?.reduce((acc, st) => acc + (st.cities?.length || 0), 0)} cities)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">
+              2. State / Province Filter
+            </label>
+            <select
+              value={selectedState}
+              onChange={(e) => setSelectedState(e.target.value)}
+              disabled={!selectedCountry}
+              className="w-full px-3 py-2 rounded-xl bg-stone-100 border border-stone-200 text-xs text-stone-900 focus:outline-none focus:border-amber-600 font-semibold disabled:opacity-50"
+            >
+              <option value="">-- All States / Provinces --</option>
+              {hierarchy
+                .find((h) => h.country === selectedCountry)
+                ?.states.map((st) => (
+                  <option key={st.state} value={st.state}>
+                    {st.state} ({st.cities?.length || 0} cities)
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className="flex items-end">
+            {(selectedCountry || selectedState) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCountry('');
+                  setSelectedState('');
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-bold transition"
+              >
+                Reset Location Filter
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Region Pills & Sort Selector */}
         <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-stone-100">
@@ -245,8 +323,10 @@ export const CitySearchPage = () => {
                   <div className="absolute bottom-3 left-4 right-4 text-white">
                     <h3 className="text-2xl font-bold font-serif leading-tight">{city.name}</h3>
                     <p className="text-xs text-stone-300 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                      {city.country}
+                      <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>
+                        {city.country} {city.state ? `• ${city.state}` : ''}
+                      </span>
                     </p>
                   </div>
                 </div>

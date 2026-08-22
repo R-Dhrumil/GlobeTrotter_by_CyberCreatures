@@ -816,10 +816,10 @@ export const ItineraryBuilderPage = () => {
               onChange={(e) => setSelectedCityId(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-sm text-stone-900 focus:outline-none focus:border-amber-600"
             >
-              <option value="">-- Choose a Global City --</option>
+              <option value="">-- Choose a Global City (Country &gt; State &gt; City) --</option>
               {catalogCities.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}, {c.country} ({c.region})
+                  {c.country} {c.state ? `→ ${c.state}` : ''} → {c.name}
                 </option>
               ))}
             </select>

@@ -76,6 +76,7 @@ export const tripAPI = {
 
 export const catalogAPI = {
   getCities: (params) => api.get('/catalog/cities', { params }),
+  getHierarchy: () => api.get('/catalog/hierarchy'),
   getCityById: (id) => api.get(`/catalog/cities/${id}`),
   getActivities: (params) => api.get('/catalog/activities', { params }),
   getFeatured: () => api.get('/catalog/featured'),
