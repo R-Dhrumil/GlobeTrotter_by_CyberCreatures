@@ -397,11 +397,12 @@ async function main() {
   );
   const stop1 = stop1Res.rows[0];
 
-  if (createdActivities[4]) {
+  const tokyoShibuya = createdActivities.find((a) => a.name && a.name.includes('Shibuya Crossing')) || createdActivities[0];
+  if (tokyoShibuya) {
     await query(
       `INSERT INTO "StopActivity" (id, "stopId", "activityId", "scheduledDate", "scheduledTime", notes, "updatedAt")
        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW())`,
-      [stop1.id, createdActivities[4].id, '2026-09-11', '10:00 AM', 'Meet guide at Hachiko statue.']
+      [stop1.id, tokyoShibuya.id, '2026-09-11', '10:00 AM', 'Meet guide at Hachiko statue near Shibuya station.']
     );
   }
 

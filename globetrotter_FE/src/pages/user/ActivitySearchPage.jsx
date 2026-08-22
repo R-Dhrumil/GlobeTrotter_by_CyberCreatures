@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { catalogAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { ImageWithFallback } from '../../components/common/ImageWithFallback';
 import {
   Compass,
   Search,
@@ -131,7 +132,7 @@ export const ActivitySearchPage = () => {
             >
               <div>
                 <div className="relative h-48 overflow-hidden bg-stone-900">
-                  <img
+                  <ImageWithFallback
                     src={act.imageUrl}
                     alt={act.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500"

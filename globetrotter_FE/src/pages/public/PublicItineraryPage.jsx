@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { tripAPI } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { copyToClipboard } from '../../utils/clipboard';
+import { ImageWithFallback } from '../../components/common/ImageWithFallback';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import {
   Compass,
@@ -256,13 +257,11 @@ export const PublicItineraryPage = () => {
                                 key={sa.id}
                                 className="flex items-start gap-4 p-4 rounded-2xl bg-stone-50 border border-stone-100 hover:bg-stone-100/70 transition"
                               >
-                                {sa.activity?.imageUrl && (
-                                  <img
-                                    src={sa.activity.imageUrl}
-                                    alt={sa.activity.name}
-                                    className="w-16 h-16 rounded-xl object-cover shrink-0"
-                                  />
-                                )}
+                                <ImageWithFallback
+                                  src={sa.activity?.imageUrl}
+                                  alt={sa.activity?.name || 'Activity'}
+                                  className="w-16 h-16 rounded-xl object-cover shrink-0"
+                                />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between gap-2">
                                     <h6 className="text-sm font-bold text-stone-900 font-serif truncate">

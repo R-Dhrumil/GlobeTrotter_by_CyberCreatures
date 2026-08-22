@@ -6,6 +6,7 @@ import { Modal } from '../../components/common/Modal';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useToast } from '../../context/ToastContext';
 import { copyToClipboard } from '../../utils/clipboard';
+import { ImageWithFallback } from '../../components/common/ImageWithFallback';
 import { InteractiveWorldMap } from '../../components/common/InteractiveWorldMap';
 import {
   Compass,
@@ -603,13 +604,11 @@ export const ItineraryBuilderPage = () => {
                         className="p-4 rounded-2xl bg-stone-50 border border-stone-100 hover:bg-stone-100/80 transition flex items-start justify-between gap-3"
                       >
                         <div className="flex items-start gap-3 min-w-0">
-                          {sa.activity?.imageUrl && (
-                            <img
-                              src={sa.activity.imageUrl}
-                              alt={sa.activity.name}
-                              className="w-14 h-14 rounded-xl object-cover shrink-0"
-                            />
-                          )}
+                          <ImageWithFallback
+                            src={sa.activity?.imageUrl}
+                            alt={sa.activity?.name || 'Activity'}
+                            className="w-14 h-14 rounded-xl object-cover shrink-0"
+                          />
                           <div className="min-w-0">
                             <h5 className="text-xs font-bold text-stone-900 font-serif truncate">
                               {sa.activity?.name}
@@ -853,13 +852,11 @@ export const ItineraryBuilderPage = () => {
                           key={sa.id}
                           className="p-4 rounded-2xl bg-stone-50 border border-stone-200/60 flex items-start gap-3"
                         >
-                          {sa.activity?.imageUrl && (
-                            <img
-                              src={sa.activity.imageUrl}
-                              alt={sa.activity.name}
-                              className="w-16 h-16 rounded-xl object-cover shrink-0"
-                            />
-                          )}
+                          <ImageWithFallback
+                            src={sa.activity?.imageUrl}
+                            alt={sa.activity?.name || 'Activity'}
+                            className="w-16 h-16 rounded-xl object-cover shrink-0"
+                          />
                           <div className="space-y-1 min-w-0">
                             <span className="px-2 py-0.5 rounded-md bg-stone-200/70 text-stone-800 text-[9px] font-bold uppercase tracking-wider">
                               {sa.activity?.category || 'Sightseeing'}
@@ -1011,13 +1008,11 @@ export const ItineraryBuilderPage = () => {
             if (!chosenAct) return null;
             return (
               <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200/80 flex items-start gap-3">
-                {chosenAct.imageUrl && (
-                  <img
-                    src={chosenAct.imageUrl}
-                    alt={chosenAct.name}
-                    className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm"
-                  />
-                )}
+                <ImageWithFallback
+                  src={chosenAct.imageUrl}
+                  alt={chosenAct.name}
+                  className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">

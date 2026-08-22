@@ -5,6 +5,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
 import { InteractiveWorldMap } from '../../components/common/InteractiveWorldMap';
 import { useToast } from '../../context/ToastContext';
+import { ImageWithFallback } from '../../components/common/ImageWithFallback';
 import {
   Compass,
   Search,
@@ -306,7 +307,7 @@ export const CitySearchPage = () => {
             >
               <div>
                 <div className="relative h-52 overflow-hidden bg-stone-900">
-                  <img
+                  <ImageWithFallback
                     src={city.imageUrl}
                     alt={city.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
