@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { tripAPI } from '../../api/client';
 import { Modal } from '../../components/common/Modal';
-import { Compass, Calendar, Image as ImageIcon, Sparkles, Globe, DollarSign, Users, Clock, Calculator } from 'lucide-react';
+import { Calendar, Sparkles, DollarSign, Users, Clock, Calculator } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const sampleCoverPhotos = [
@@ -75,7 +75,8 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
 
     try {
       const res = await tripAPI.create(formData);
-      if (res.data?.trip) {
+      const createdTrip = res.data?.trip || res.trip;
+      if (createdTrip) {
         try {
           confetti({
             particleCount: 60,
@@ -83,7 +84,9 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
             origin: { y: 0.6 },
           });
         } catch (e) {}
-        onTripCreated(res.data.trip);
+        if (onTripCreated) {
+          onTripCreated(createdTrip);
+        }
         onClose();
       }
     } catch (err) {
@@ -219,7 +222,7 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
                 min="1"
                 max="50"
                 value={formData.travelerCount}
-                onChange={(e) => setFormData({ ...formData, travelerCount: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+                onChange={(e) => setFormData({ ...formData, travelerCount: e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value, 10) || 1) })}
                 className="w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs text-stone-900 focus:outline-none focus:border-emerald-600 bg-white"
               />
             </div>
@@ -274,8 +277,6 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
           </div>
         </div>
 
-        </div>
-
         <div className="pt-3 flex items-center justify-end gap-3 border-t border-stone-100">
           <button
             type="button"
@@ -297,3 +298,4 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
     </Modal>
   );
 };
+
