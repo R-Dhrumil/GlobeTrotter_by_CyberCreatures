@@ -274,6 +274,8 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
           </div>
         </div>
 
+        </div>
+
         <div className="pt-3 flex items-center justify-end gap-3 border-t border-stone-100">
           <button
             type="button"
