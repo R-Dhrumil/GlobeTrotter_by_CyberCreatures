@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { tripAPI } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { copyToClipboard } from '../../utils/clipboard';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import {
   Compass,
@@ -49,10 +50,12 @@ export const PublicItineraryPage = () => {
     fetchPublicTrip();
   }, [slug]);
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
+  const handleCopyLink = async () => {
+    const success = await copyToClipboard(window.location.href);
+    if (success) {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
   };
 
   const handleCloneTrip = async () => {

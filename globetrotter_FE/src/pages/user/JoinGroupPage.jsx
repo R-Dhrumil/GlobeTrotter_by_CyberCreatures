@@ -27,15 +27,8 @@ export const JoinGroupPage = () => {
   const [joined, setJoined] = useState(false);
 
   useEffect(() => {
-    // If not authenticated, redirect to register with a return URL
-    if (!isAuthenticated) {
-      const returnUrl = encodeURIComponent(`/app/group/join/${token}`);
-      navigate(`/signup?redirect=${returnUrl}`, { replace: true });
-      return;
-    }
-
     validateToken();
-  }, [token, isAuthenticated]);
+  }, [token]);
 
   const validateToken = async () => {
     setLoading(true);
@@ -53,6 +46,12 @@ export const JoinGroupPage = () => {
   };
 
   const handleJoin = async () => {
+    if (!isAuthenticated) {
+      const returnUrl = encodeURIComponent(`/app/group/join/${token}`);
+      navigate(`/login?redirect=${returnUrl}`, { state: { from: { pathname: `/app/group/join/${token}` } } });
+      return;
+    }
+
     setJoining(true);
     try {
       const res = await groupAPI.joinGroup(token);
@@ -65,7 +64,6 @@ export const JoinGroupPage = () => {
     } catch (err) {
       if (err.message?.includes('already a member')) {
         showSuccess('You are already a member of this trip!');
-        // Try to find the trip ID from the validation data
         if (tripInfo?.id) {
           setTimeout(() => navigate(`/app/trips/${tripInfo.id}/group`), 1000);
         }

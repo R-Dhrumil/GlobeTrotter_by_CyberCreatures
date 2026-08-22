@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useToast } from '../../context/ToastContext';
+import { copyToClipboard } from '../../utils/clipboard';
 import {
   Compass,
   Plus,
@@ -79,12 +80,17 @@ export const MyTripsPage = () => {
     });
   };
 
-  const handleCopyPublicLink = (slug) => {
+  const handleCopyPublicLink = async (slug) => {
+    if (!slug) return;
     const url = `${window.location.origin}/trips/share/${slug}`;
-    navigator.clipboard.writeText(url);
-    showSuccess('✨ Public shareable link copied to clipboard!');
-    setCopiedSlug(slug);
-    setTimeout(() => setCopiedSlug(null), 2000);
+    const success = await copyToClipboard(url);
+    if (success) {
+      showSuccess('✨ Public shareable link copied to clipboard!');
+      setCopiedSlug(slug);
+      setTimeout(() => setCopiedSlug(null), 2000);
+    } else {
+      showError('Failed to copy public link to clipboard');
+    }
   };
 
   const filteredTrips = trips.filter((t) =>

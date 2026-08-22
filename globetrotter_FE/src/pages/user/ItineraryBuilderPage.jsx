@@ -5,6 +5,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useToast } from '../../context/ToastContext';
+import { copyToClipboard } from '../../utils/clipboard';
 import { InteractiveWorldMap } from '../../components/common/InteractiveWorldMap';
 import {
   Compass,
@@ -278,13 +279,17 @@ export const ItineraryBuilderPage = () => {
     }
   };
 
-  const handleCopyShareLink = () => {
-    if (!trip.shareSlug) return;
+  const handleCopyShareLink = async () => {
+    if (!trip?.shareSlug) return;
     const url = `${window.location.origin}/trips/share/${trip.shareSlug}`;
-    navigator.clipboard.writeText(url);
-    showSuccess('✨ Shareable trip link copied to clipboard!');
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
+    const success = await copyToClipboard(url);
+    if (success) {
+      showSuccess('✨ Shareable trip link copied to clipboard!');
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } else {
+      showError('Failed to copy share link to clipboard');
+    }
   };
 
   if (loading) return <LoadingSpinner fullScreen text="Opening Itinerary Planner..." />;

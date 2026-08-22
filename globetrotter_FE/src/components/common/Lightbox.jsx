@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, Heart, Share2, MapPin, Tag } from 'lucide-react';
+import { copyToClipboard } from '../../utils/clipboard';
 
 export const Lightbox = ({ isOpen, onClose, item }) => {
   useEffect(() => {
@@ -74,9 +75,9 @@ export const Lightbox = ({ isOpen, onClose, item }) => {
               <span>{item.likesCount || 142} explorers inspired</span>
             </div>
             <button
-              onClick={() => {
-                navigator.clipboard?.writeText(window.location.href);
-                alert('Photo link copied to clipboard!');
+              onClick={async () => {
+                const ok = await copyToClipboard(window.location.href);
+                if (ok) alert('Photo link copied to clipboard!');
               }}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sm font-medium text-white transition"
             >

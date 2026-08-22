@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { groupAPI, tripAPI } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { copyToClipboard } from '../../utils/clipboard';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import {
@@ -128,19 +129,28 @@ export const GroupTripPage = () => {
     }
   };
 
-  const copyInviteLink = () => {
+  const copyInviteLink = async () => {
+    if (!inviteToken) return;
     const link = `${window.location.origin}/app/group/join/${inviteToken}`;
-    navigator.clipboard.writeText(link);
-    setCopied(true);
-    showSuccess('Invite link copied to clipboard!');
-    setTimeout(() => setCopied(false), 2000);
+    const success = await copyToClipboard(link);
+    if (success) {
+      setCopied(true);
+      showSuccess('Invite link copied to clipboard!');
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      showError('Failed to copy invite link to clipboard');
+    }
   };
 
-  const copyPublicLink = () => {
+  const copyPublicLink = async () => {
     if (trip?.shareSlug) {
       const link = `${window.location.origin}/trips/share/${trip.shareSlug}`;
-      navigator.clipboard.writeText(link);
-      showSuccess('Public link copied to clipboard!');
+      const success = await copyToClipboard(link);
+      if (success) {
+        showSuccess('Public link copied to clipboard!');
+      } else {
+        showError('Failed to copy public link to clipboard');
+      }
     }
   };
 

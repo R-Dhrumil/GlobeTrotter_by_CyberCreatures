@@ -128,14 +128,7 @@ export const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/app/group/join/:token"
-          element={
-            <ProtectedRoute>
-              <JoinGroupPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/app/group/join/:token" element={<JoinGroupPage />} />
       </Route>
 
       {/* 2. Admin Panel Routes (Gated by AdminRoute) */}

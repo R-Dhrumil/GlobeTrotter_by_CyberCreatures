@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Compass, Mail, Lock, User, ArrowRight, Sparkles, Eye, EyeOff } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -14,6 +14,10 @@ export const SignupPage = () => {
 
   const { register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const searchParams = new URLSearchParams(location.search);
+  const redirectUrl = searchParams.get('redirect') || location.state?.from?.pathname || '/app/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,7 +35,7 @@ export const SignupPage = () => {
           colors: ['#ea580c', '#d97706', '#22c55e'],
         });
       } catch (err) {}
-      navigate('/app/dashboard');
+      navigate(redirectUrl, { replace: true });
     } catch (err) {
       setError(err.message || 'Registration failed. Please check details.');
     } finally {
