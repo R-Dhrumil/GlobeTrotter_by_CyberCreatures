@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useToast } from '../../context/ToastContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { copyToClipboard } from '../../utils/clipboard';
 import {
   Compass,
@@ -26,6 +27,7 @@ import {
 
 export const MyTripsPage = () => {
   const { showSuccess, showError } = useToast();
+  const { formatPrice } = useCurrency();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -209,7 +211,7 @@ export const MyTripsPage = () => {
                     </span>
                     <span className="flex items-center gap-1 font-semibold text-emerald-700">
                       <DollarSign className="w-3.5 h-3.5" />
-                      ${trip.budgets?.reduce((acc, b) => acc + (b.estimatedAmount || 0), 0) || 0} budget
+                      {formatPrice(trip.budgets?.reduce((acc, b) => acc + (b.estimatedAmount || 0), 0) || 0)} budget
                     </span>
                     {trip.isGroupTrip && (
                       <span className="flex items-center gap-1 font-semibold text-sky-700">
@@ -282,7 +284,7 @@ export const MyTripsPage = () => {
                     <span>•</span>
                     <span>{trip.stops?.length || 0} stops</span>
                     <span>•</span>
-                    <span>${trip.budgets?.reduce((acc, b) => acc + (b.estimatedAmount || 0), 0) || 0} budget</span>
+                    <span>{formatPrice(trip.budgets?.reduce((acc, b) => acc + (b.estimatedAmount || 0), 0) || 0)} budget</span>
                   </div>
                 </div>
               </div>

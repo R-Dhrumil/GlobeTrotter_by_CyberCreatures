@@ -1015,7 +1015,7 @@ export const ItineraryBuilderPage = () => {
               <option value="">-- Choose Famous Activity in {selectedStopForActivity?.city?.name || 'City'} --</option>
               {selectedStopForActivity?.city?.activities?.map((a) => (
                 <option key={a.id} value={a.id}>
-                  🌟 {a.name} — {a.cost === 0 ? 'Free' : `$${a.cost}`} ({a.category} • {a.durationMinutes} mins)
+                  🌟 {a.name} — {formatPrice(a.cost)} ({a.category} • {a.durationMinutes} mins)
                 </option>
               ))}
             </select>

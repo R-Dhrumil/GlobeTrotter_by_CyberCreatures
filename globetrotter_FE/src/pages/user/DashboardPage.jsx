@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { tripAPI, catalogAPI } from '../../api/client';
 import { CreateTripModal } from './CreateTripModal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -20,6 +21,7 @@ import {
 
 export const DashboardPage = () => {
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
 
   const [trips, setTrips] = useState([]);
@@ -140,7 +142,7 @@ export const DashboardPage = () => {
         <div className="bg-white p-5 sm:p-6 rounded-3xl border border-stone-200/80 shadow-soft flex items-center justify-between">
           <div>
             <p className="text-xs text-stone-500 font-bold uppercase tracking-wider">Allocated Budget</p>
-            <p className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 mt-1">${totalEstimatedBudget}</p>
+            <p className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 mt-1">{formatPrice(totalEstimatedBudget)}</p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
             <DollarSign className="w-6 h-6" />

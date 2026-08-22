@@ -106,13 +106,13 @@ export const ActivitySearchPage = () => {
             <select
               value={maxCost}
               onChange={(e) => setMaxCost(e.target.value)}
-              className="bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200 text-xs text-stone-900 focus:outline-none"
+              className="bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200 text-xs text-stone-900 focus:outline-none font-semibold"
             >
               <option value="">Any Price</option>
               <option value="0">Free Only</option>
-              <option value="50">Under $50</option>
-              <option value="100">Under $100</option>
-              <option value="200">Under $200</option>
+              <option value="50">Under {formatPrice(50, { showFree: false })}</option>
+              <option value="100">Under {formatPrice(100, { showFree: false })}</option>
+              <option value="200">Under {formatPrice(200, { showFree: false })}</option>
             </select>
           </div>
         </div>
