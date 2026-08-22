@@ -22,7 +22,7 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
     travelerCount: 1,
     description: '',
     coverPhotoUrl: sampleCoverPhotos[0].url,
-    isPublic: true,
+    isPublic: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -274,18 +274,6 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
           </div>
         </div>
 
-        {/* Visibility */}
-        <div className="flex items-center gap-2 pt-0.5">
-          <input
-            type="checkbox"
-            id="isPublic"
-            checked={formData.isPublic}
-            onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-            className="w-4 h-4 text-amber-600 rounded border-stone-300 focus:ring-amber-500 cursor-pointer"
-          />
-          <label htmlFor="isPublic" className="text-xs text-stone-700 font-medium cursor-pointer">
-            Make this itinerary publicly viewable & shareable with friends
-          </label>
         </div>
 
         <div className="pt-3 flex items-center justify-end gap-3 border-t border-stone-100">

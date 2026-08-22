@@ -170,47 +170,82 @@ export const getFeaturedDestinations = catchAsync(async (req, res) => {
  */
 export const getGallery = catchAsync(async (req, res) => {
   const { tag, search } = req.query;
+  const userId = req.user?.id; // from softAuthenticate
 
-  const citiesRes = await db.query('SELECT id, name, country, region, "imageUrl", description FROM "City"');
+  // 1. Fetch Spots (Sightseeing, Adventure, Nature) & Foods
   const activitiesRes = await db.query(
     `SELECT a.*, json_build_object('id', c.id, 'name', c.name, 'country', c.country) as city
      FROM "Activity" a
-     LEFT JOIN "City" c ON a."cityId" = c.id`
+     LEFT JOIN "City" c ON a."cityId" = c.id
+     WHERE a.category IN ('Sightseeing', 'Adventure', 'Nature', 'Food & Drink', 'Culinary')`
+  );
+
+  // 2. Fetch Public Trips
+  const tripsRes = await db.query(
+    `SELECT t.id, t.name, t.description, t."coverPhotoUrl", t."shareSlug",
+            json_build_object('id', u.id, 'name', u.name) as creator
+     FROM "Trip" t
+     LEFT JOIN "User" u ON t."userId" = u.id
+     WHERE t."isPublic" = true`
   );
 
   let galleryItems = [];
+  let likedItemsMap = {};
+  let savedTripsMap = {};
 
-  citiesRes.rows.forEach((c, index) => {
-    if (c.imageUrl) {
-      galleryItems.push({
-        id: `city-${c.id}`,
-        title: `${c.name}, ${c.country}`,
-        subtitle: `${c.region} Region`,
-        imageUrl: c.imageUrl,
-        tag: c.region,
-        category: 'Destination',
-        description: c.description,
-        heightRatio: index % 3 === 0 ? 'tall' : index % 2 === 0 ? 'medium' : 'square',
-        likesCount: 120 + index * 17,
-      });
-    }
-  });
+  if (userId) {
+    const likesRes = await db.query('SELECT "itemId", "itemType" FROM "LikedItem" WHERE "userId" = $1', [userId]);
+    likesRes.rows.forEach(row => {
+      likedItemsMap[`${row.itemType}-${row.itemId}`] = true;
+    });
+
+    const savesRes = await db.query('SELECT "tripId" FROM "SavedTrip" WHERE "userId" = $1', [userId]);
+    savesRes.rows.forEach(row => {
+      savedTripsMap[row.tripId] = true;
+    });
+  }
 
   activitiesRes.rows.forEach((a, index) => {
     if (a.imageUrl) {
+      const isFood = ['Food & Drink', 'Culinary'].includes(a.category);
       galleryItems.push({
-        id: `act-${a.id}`,
+        id: a.id,
+        itemType: 'ACTIVITY',
         title: a.name,
         subtitle: `${a.city?.name || 'World'}, ${a.city?.country || ''}`,
         imageUrl: a.imageUrl,
-        tag: a.category,
+        tag: isFood ? 'Food & Drink' : 'Spots',
         category: a.category,
         description: a.description,
         heightRatio: index % 2 === 0 ? 'tall' : 'medium',
         likesCount: 85 + index * 9,
+        isLiked: !!likedItemsMap[`ACTIVITY-${a.id}`],
       });
     }
   });
+
+  tripsRes.rows.forEach((t, index) => {
+    if (t.coverPhotoUrl) {
+      galleryItems.push({
+        id: t.id,
+        itemType: 'TRIP',
+        title: t.name,
+        subtitle: `Curated by ${t.creator?.name || 'Traveler'}`,
+        imageUrl: t.coverPhotoUrl,
+        tag: 'Public Trips',
+        category: 'Trip',
+        description: t.description,
+        shareSlug: t.shareSlug,
+        heightRatio: index % 3 === 0 ? 'tall' : 'square',
+        likesCount: 120 + index * 12,
+        isLiked: !!likedItemsMap[`TRIP-${t.id}`],
+        isSaved: !!savedTripsMap[t.id],
+      });
+    }
+  });
+
+  // Deterministic shuffle based on ID to avoid hydration issues, or just a simple sort
+  galleryItems.sort((a, b) => a.id.localeCompare(b.id));
 
   if (tag && tag !== 'ALL') {
     galleryItems = galleryItems.filter(
@@ -279,3 +314,56 @@ export const getPublicTrips = catchAsync(async (req, res) => {
 
   return ApiResponse.send(res, 200, { trips: tripsRes.rows }, 'Public trips retrieved');
 });
+
+/**
+ * Toggle Like for a Gallery Item
+ */
+export const toggleLike = catchAsync(async (req, res) => {
+  const { itemId, itemType } = req.body;
+  if (!itemId || !['TRIP', 'ACTIVITY'].includes(itemType)) {
+    throw new ApiError(400, 'Invalid itemId or itemType');
+  }
+
+  const existingRes = await db.query(
+    'SELECT * FROM "LikedItem" WHERE "userId" = $1 AND "itemId" = $2 AND "itemType" = $3',
+    [req.user.id, itemId, itemType]
+  );
+
+  if (existingRes.rows.length > 0) {
+    await db.query('DELETE FROM "LikedItem" WHERE id = $1', [existingRes.rows[0].id]);
+    return ApiResponse.send(res, 200, { isLiked: false }, 'Item unliked');
+  } else {
+    await db.query(
+      'INSERT INTO "LikedItem" ("userId", "itemId", "itemType") VALUES ($1, $2, $3)',
+      [req.user.id, itemId, itemType]
+    );
+    return ApiResponse.send(res, 200, { isLiked: true }, 'Item liked');
+  }
+});
+
+/**
+ * Toggle Save for a Public Trip
+ */
+export const toggleSaveTrip = catchAsync(async (req, res) => {
+  const { tripId } = req.body;
+  if (!tripId) {
+    throw new ApiError(400, 'Trip ID is required');
+  }
+
+  const existingRes = await db.query(
+    'SELECT * FROM "SavedTrip" WHERE "userId" = $1 AND "tripId" = $2',
+    [req.user.id, tripId]
+  );
+
+  if (existingRes.rows.length > 0) {
+    await db.query('DELETE FROM "SavedTrip" WHERE id = $1', [existingRes.rows[0].id]);
+    return ApiResponse.send(res, 200, { isSaved: false }, 'Trip unsaved');
+  } else {
+    await db.query(
+      'INSERT INTO "SavedTrip" ("userId", "tripId") VALUES ($1, $2)',
+      [req.user.id, tripId]
+    );
+    return ApiResponse.send(res, 200, { isSaved: true }, 'Trip saved');
+  }
+});
+
