@@ -76,7 +76,7 @@ export const fetchFullTrip = async (tripId) => {
  * Create a new Trip
  */
 export const createTrip = catchAsync(async (req, res) => {
-  const { name, startDate, endDate, description, coverPhotoUrl, isPublic } = req.body;
+  const { name, startDate, endDate, description, coverPhotoUrl, isPublic, estimatedBudget, travelerCount } = req.body;
 
   if (!name || !name.trim()) {
     throw new ApiError(400, 'Trip name is required');
@@ -100,7 +100,21 @@ export const createTrip = catchAsync(async (req, res) => {
     ]
   );
 
-  const trip = await fetchFullTrip(insertRes.rows[0].id);
+  const tripId = insertRes.rows[0].id;
+
+  // If initial estimated budget is provided, insert initial budget record
+  if (estimatedBudget && Number(estimatedBudget) > 0) {
+    const budgetVal = Number(estimatedBudget);
+    const countVal = Number(travelerCount) || 1;
+    const perPerson = (budgetVal / countVal).toFixed(2);
+    await db.query(
+      `INSERT INTO "Budget" (id, "tripId", category, "estimatedAmount", "actualAmount", notes, "updatedAt")
+       VALUES (gen_random_uuid(), $1, 'OTHER', $2, 0.0, $3, NOW())`,
+      [tripId, budgetVal, `Initial Trip Budget ($${perPerson}/person split among ${countVal} traveler(s))`]
+    );
+  }
+
+  const trip = await fetchFullTrip(tripId);
   return ApiResponse.send(res, 201, { trip }, 'Trip created successfully');
 });
 
