@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { catalogAPI, adminAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
+import { useToast } from '../../context/ToastContext';
 import {
   Database,
   Plus,
@@ -16,10 +18,18 @@ import {
 } from 'lucide-react';
 
 export const AdminContent = () => {
+  const { showSuccess, showError } = useToast();
   const [activeTab, setActiveTab] = useState('cities'); // 'cities' or 'activities'
   const [cities, setCities] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+  });
 
   // Modals & form state
   const [cityModalOpen, setCityModalOpen] = useState(false);
@@ -99,24 +109,36 @@ export const AdminContent = () => {
     try {
       if (editingCity) {
         await adminAPI.updateCity(editingCity.id, cityForm);
+        showSuccess(`City "${cityForm.name}" updated successfully!`);
       } else {
         await adminAPI.createCity(cityForm);
+        showSuccess(`✨ City "${cityForm.name}" added to master catalog!`);
       }
       setCityModalOpen(false);
       fetchContent();
     } catch (err) {
-      alert(err.message || 'Failed to save city');
+      showError(err.message || 'Failed to save city');
     }
   };
 
-  const handleDeleteCity = async (city) => {
-    if (!window.confirm(`Delete "${city.name}" and all its activities?`)) return;
-    try {
-      await adminAPI.deleteCity(city.id);
-      fetchContent();
-    } catch (err) {
-      alert(err.message || 'Failed to delete city');
-    }
+  const handleDeleteCity = (city) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete City Destination?',
+      message: `Are you sure you want to delete "${city.name}" and all its associated catalog activities?`,
+      confirmText: 'Delete Destination',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await adminAPI.deleteCity(city.id);
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          showSuccess('City destination removed');
+          fetchContent();
+        } catch (err) {
+          showError(err.message || 'Failed to delete city');
+        }
+      },
+    });
   };
 
   // Open Activity Modal for Create / Edit
@@ -152,24 +174,36 @@ export const AdminContent = () => {
     try {
       if (editingActivity) {
         await adminAPI.updateActivity(editingActivity.id, activityForm);
+        showSuccess(`Activity "${activityForm.name}" updated`);
       } else {
         await adminAPI.createActivity(activityForm);
+        showSuccess(`✨ Activity "${activityForm.name}" added`);
       }
       setActivityModalOpen(false);
       fetchContent();
     } catch (err) {
-      alert(err.message || 'Failed to save activity');
+      showError(err.message || 'Failed to save activity');
     }
   };
 
-  const handleDeleteActivity = async (act) => {
-    if (!window.confirm(`Delete activity "${act.name}"?`)) return;
-    try {
-      await adminAPI.deleteActivity(act.id);
-      fetchContent();
-    } catch (err) {
-      alert(err.message || 'Failed to delete activity');
-    }
+  const handleDeleteActivity = (act) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Activity?',
+      message: `Are you sure you want to delete activity "${act.name}" from catalog?`,
+      confirmText: 'Delete Activity',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await adminAPI.deleteActivity(act.id);
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          showSuccess('Activity deleted');
+          fetchContent();
+        } catch (err) {
+          showError(err.message || 'Failed to delete activity');
+        }
+      },
+    });
   };
 
   return (
@@ -607,6 +641,16 @@ export const AdminContent = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
+      />
     </div>
   );
 };

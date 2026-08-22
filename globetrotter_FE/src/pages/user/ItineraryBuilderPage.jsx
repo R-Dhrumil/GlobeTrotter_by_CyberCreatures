@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { tripAPI, catalogAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
+import { useToast } from '../../context/ToastContext';
 import { InteractiveWorldMap } from '../../components/common/InteractiveWorldMap';
 import {
   Compass,
@@ -34,11 +36,22 @@ import confetti from 'canvas-confetti';
 export const ItineraryBuilderPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showSuccess, showError, showInfo } = useToast();
 
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('stops'); // 'stops', 'schedule', 'timeline'
+
+  // Confirm Modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    type: 'danger',
+    onConfirm: null,
+  });
 
   // Modals & Catalogs
   const [addStopModalOpen, setAddStopModalOpen] = useState(false);
@@ -119,21 +132,32 @@ export const ItineraryBuilderPage = () => {
       setAddStopModalOpen(false);
       setSelectedCityId('');
       setStopDates({ arrivalDate: '', departureDate: '' });
+      showSuccess('✨ Destination stop added to itinerary!');
       fetchTripDetails();
     } catch (err) {
-      alert(err.message || 'Failed to add stop');
+      showError(err.message || 'Failed to add stop');
     }
   };
 
-  // Remove Stop
-  const handleDeleteStop = async (stopId) => {
-    if (!window.confirm('Remove this stop from your itinerary?')) return;
-    try {
-      await tripAPI.deleteStop(stopId);
-      fetchTripDetails();
-    } catch (err) {
-      alert(err.message || 'Failed to remove stop');
-    }
+  // Remove Stop with Custom Confirm Modal
+  const handleDeleteStop = (stopId, cityName) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Remove Destination Stop?',
+      message: `Are you sure you want to remove ${cityName || 'this stop'} from your trip route?`,
+      confirmText: 'Remove Stop',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await tripAPI.deleteStop(stopId);
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          showSuccess('Stop removed from itinerary');
+          fetchTripDetails();
+        } catch (err) {
+          showError(err.message || 'Failed to remove stop');
+        }
+      },
+    });
   };
 
   // Reorder Stops
@@ -150,19 +174,20 @@ export const ItineraryBuilderPage = () => {
       await tripAPI.reorderStops(trip.id, stopIds);
       fetchTripDetails();
     } catch (err) {
-      alert(err.message || 'Failed to reorder stops');
+      showError(err.message || 'Failed to reorder stops');
     }
   };
 
   const handleSelectCityFromMap = async (city) => {
     try {
       await tripAPI.addStop(trip.id, { cityId: city.id });
+      showSuccess(`✨ ${city.name} added as next stop!`);
       fetchTripDetails();
       try {
         confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
       } catch (e) {}
     } catch (err) {
-      alert(err.message || 'Failed to add stop');
+      showError(err.message || 'Failed to add stop');
     }
   };
 
@@ -186,20 +211,32 @@ export const ItineraryBuilderPage = () => {
       });
       setAddActivityModalOpen(false);
       setActivityForm({ scheduledDate: '', scheduledTime: '10:00 AM', notes: '' });
+      showSuccess('✨ Scheduled experience added to stop!');
       fetchTripDetails();
     } catch (err) {
-      alert(err.message || 'Failed to add activity');
+      showError(err.message || 'Failed to add activity');
     }
   };
 
-  // Remove Scheduled Activity
-  const handleDeleteStopActivity = async (activityId) => {
-    try {
-      await tripAPI.deleteActivity(activityId);
-      fetchTripDetails();
-    } catch (err) {
-      alert(err.message || 'Failed to delete activity');
-    }
+  // Remove Scheduled Activity with Custom Confirm Modal
+  const handleDeleteStopActivity = (activityId, activityName) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Remove Scheduled Experience?',
+      message: `Are you sure you want to remove "${activityName || 'this experience'}" from your schedule?`,
+      confirmText: 'Remove Experience',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await tripAPI.deleteActivity(activityId);
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          showSuccess('Experience removed from schedule');
+          fetchTripDetails();
+        } catch (err) {
+          showError(err.message || 'Failed to delete activity');
+        }
+      },
+    });
   };
 
   // Save Trip Meta
@@ -208,9 +245,10 @@ export const ItineraryBuilderPage = () => {
     try {
       await tripAPI.update(trip.id, tripEditData);
       setEditTripModalOpen(false);
+      showSuccess('Expedition details updated');
       fetchTripDetails();
     } catch (err) {
-      alert(err.message || 'Failed to update trip');
+      showError(err.message || 'Failed to update trip');
     }
   };
 
@@ -218,8 +256,9 @@ export const ItineraryBuilderPage = () => {
     if (!trip.shareSlug) return;
     const url = `${window.location.origin}/trips/share/${trip.shareSlug}`;
     navigator.clipboard.writeText(url);
+    showSuccess('✨ Shareable trip link copied to clipboard!');
     setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+    setTimeout(() => setCopiedLink(false), 2500);
   };
 
   if (loading) return <LoadingSpinner fullScreen text="Opening Itinerary Planner..." />;
@@ -436,7 +475,7 @@ export const ItineraryBuilderPage = () => {
                     <ArrowDown className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDeleteStop(stop.id)}
+                    onClick={() => handleDeleteStop(stop.id, stop.city?.name)}
                     className="p-1.5 rounded-lg bg-rose-600/80 hover:bg-rose-700 text-white transition"
                     title="Delete Stop"
                   >
@@ -481,8 +520,8 @@ export const ItineraryBuilderPage = () => {
                 </div>
 
                 {stop.activities?.length === 0 ? (
-                  <div className="p-6 bg-stone-50 rounded-2xl text-center text-xs text-stone-400">
-                    No experiences assigned yet. Click "Add Activity" to browse curated local tours.
+                  <div className="p-4 rounded-2xl bg-stone-50 border border-dashed border-stone-200 text-center text-xs text-stone-400">
+                    No scheduled experiences yet for {stop.city?.name}. Click "Add Activity" to browse curated experiences.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -524,7 +563,7 @@ export const ItineraryBuilderPage = () => {
                         </div>
 
                         <button
-                          onClick={() => handleDeleteStopActivity(sa.id)}
+                          onClick={() => handleDeleteStopActivity(sa.id, sa.activity?.name)}
                           className="p-1 text-stone-400 hover:text-rose-600 transition"
                           title="Remove Activity"
                         >
@@ -1034,6 +1073,17 @@ export const ItineraryBuilderPage = () => {
           </div>
         </form>
       </Modal>
+
+      {/* In-App Custom Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
+      />
     </div>
   );
 };

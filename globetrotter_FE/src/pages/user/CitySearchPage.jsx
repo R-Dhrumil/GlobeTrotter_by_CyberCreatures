@@ -4,6 +4,7 @@ import { catalogAPI, tripAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
 import { InteractiveWorldMap } from '../../components/common/InteractiveWorldMap';
+import { useToast } from '../../context/ToastContext';
 import {
   Compass,
   Search,
@@ -21,6 +22,7 @@ import {
 import confetti from 'canvas-confetti';
 
 export const CitySearchPage = () => {
+  const { showSuccess, showError } = useToast();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialSearch = queryParams.get('search') || '';
@@ -114,10 +116,10 @@ export const CitySearchPage = () => {
       try {
         confetti({ particleCount: 50, spread: 50, origin: { y: 0.7 } });
       } catch (e) {}
-      alert(`✨ ${selectedCityForTrip.name} added to your chosen itinerary!`);
+      showSuccess(`✨ ${selectedCityForTrip.name} added to your chosen itinerary!`);
       setAddToTripModalOpen(false);
     } catch (err) {
-      alert(err.message || 'Failed to add stop to trip');
+      showError(err.message || 'Failed to add stop to trip');
     } finally {
       setAddingStop(false);
     }

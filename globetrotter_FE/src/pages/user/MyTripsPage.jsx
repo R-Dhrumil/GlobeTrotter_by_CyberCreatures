@@ -4,6 +4,8 @@ import { tripAPI } from '../../api/client';
 import { CreateTripModal } from './CreateTripModal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
+import { useToast } from '../../context/ToastContext';
 import {
   Compass,
   Plus,
@@ -21,12 +23,20 @@ import {
 } from 'lucide-react';
 
 export const MyTripsPage = () => {
+  const { showSuccess, showError } = useToast();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [copiedSlug, setCopiedSlug] = useState(null);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+  });
 
   const navigate = useNavigate();
 
@@ -48,21 +58,30 @@ export const MyTripsPage = () => {
     }
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
-      return;
-    }
-    try {
-      await tripAPI.delete(id);
-      setTrips((prev) => prev.filter((t) => t.id !== id));
-    } catch (err) {
-      alert(err.message || 'Failed to delete trip');
-    }
+  const handleDelete = (id, name) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Trip Expedition?',
+      message: `Are you sure you want to delete "${name}"? This action will permanently remove all stopovers and scheduled activities.`,
+      confirmText: 'Delete Expedition',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await tripAPI.delete(id);
+          setTrips((prev) => prev.filter((t) => t.id !== id));
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          showSuccess('Trip expedition deleted');
+        } catch (err) {
+          showError(err.message || 'Failed to delete trip');
+        }
+      },
+    });
   };
 
   const handleCopyPublicLink = (slug) => {
     const url = `${window.location.origin}/trips/share/${slug}`;
     navigator.clipboard.writeText(url);
+    showSuccess('✨ Public shareable link copied to clipboard!');
     setCopiedSlug(slug);
     setTimeout(() => setCopiedSlug(null), 2000);
   };
@@ -279,6 +298,16 @@ export const MyTripsPage = () => {
           setTrips((prev) => [newTrip, ...prev]);
           navigate(`/app/trips/${newTrip.id}`);
         }}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
       />
     </div>
   );
