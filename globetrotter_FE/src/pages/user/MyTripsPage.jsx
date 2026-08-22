@@ -27,7 +27,7 @@ import {
 
 export const MyTripsPage = () => {
   const { showSuccess, showError } = useToast();
-  const { formatPrice } = useCurrency();
+  const { formatPrice, activeCurrency } = useCurrency();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

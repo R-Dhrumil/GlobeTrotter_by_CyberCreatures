@@ -14,7 +14,12 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const searchParams = new URLSearchParams(location.search);
   const from = location.state?.from?.pathname || '/app/dashboard';
+
+  const signupTo = searchParams.get('redirect') 
+    ? `/signup?redirect=${encodeURIComponent(searchParams.get('redirect'))}`
+    : '/signup';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -173,7 +178,7 @@ export const LoginPage = () => {
 
           <p className="text-xs text-stone-500 mt-6 text-center">
             Don't have an expedition pass yet?{' '}
-            <Link to="/signup" className="text-amber-700 font-bold hover:underline">
+            <Link to={signupTo} className="text-amber-700 font-bold hover:underline">
               Create Account
             </Link>
           </p>

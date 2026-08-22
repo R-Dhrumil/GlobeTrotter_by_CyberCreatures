@@ -48,7 +48,7 @@ export const JoinGroupPage = () => {
   const handleJoin = async () => {
     if (!isAuthenticated) {
       const returnUrl = encodeURIComponent(`/app/group/join/${token}`);
-      navigate(`/login?redirect=${returnUrl}`, { state: { from: { pathname: `/app/group/join/${token}` } } });
+      navigate(`/signup?redirect=${returnUrl}`, { state: { from: { pathname: `/app/group/join/${token}` } } });
       return;
     }
 
