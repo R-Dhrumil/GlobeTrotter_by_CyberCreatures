@@ -147,8 +147,8 @@ export const DashboardPage = () => {
             <p className="text-xs text-stone-500 font-bold uppercase tracking-wider">Allocated Budget</p>
             <p className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 mt-1">{formatPrice(totalEstimatedBudget)}</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
-            <DollarSign className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-xl font-serif shrink-0">
+            {activeCurrency.symbol || '₹'}
           </div>
         </div>
       </div>

@@ -210,7 +210,7 @@ export const MyTripsPage = () => {
                       {trip.stops?.length || 0} stops
                     </span>
                     <span className="flex items-center gap-1 font-semibold text-emerald-700">
-                      <DollarSign className="w-3.5 h-3.5" />
+                      <span className="font-bold text-xs">{activeCurrency.symbol || '₹'}</span>
                       {formatPrice(trip.budgets?.reduce((acc, b) => acc + (b.estimatedAmount || 0), 0) || 0)} budget
                     </span>
                     {trip.isGroupTrip && (
