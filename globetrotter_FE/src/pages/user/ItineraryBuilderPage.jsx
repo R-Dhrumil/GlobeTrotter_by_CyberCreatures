@@ -30,6 +30,7 @@ import {
   Info,
   Navigation,
   ShieldAlert,
+  Users,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
