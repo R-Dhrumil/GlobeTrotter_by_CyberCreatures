@@ -1,4 +1,4 @@
-import { prisma } from '../config/db.js';
+import { db } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
@@ -9,42 +9,55 @@ import { catchAsync } from '../utils/catchAsync.js';
 export const getCities = catchAsync(async (req, res) => {
   const { search, region, country, costIndex, sortBy } = req.query;
 
-  const where = {};
+  const whereConditions = [];
+  const params = [];
+  let paramIdx = 1;
 
   if (search) {
-    where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { country: { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } },
-    ];
+    whereConditions.push(`(c.name ILIKE $${paramIdx} OR c.country ILIKE $${paramIdx} OR c.description ILIKE $${paramIdx})`);
+    params.push(`%${search}%`);
+    paramIdx++;
   }
 
   if (region && region !== 'ALL') {
-    where.region = { equals: region, mode: 'insensitive' };
+    whereConditions.push(`c.region ILIKE $${paramIdx++}`);
+    params.push(region);
   }
 
   if (country) {
-    where.country = { equals: country, mode: 'insensitive' };
+    whereConditions.push(`c.country ILIKE $${paramIdx++}`);
+    params.push(country);
   }
 
   if (costIndex) {
-    where.costIndex = parseInt(costIndex, 10);
+    whereConditions.push(`c."costIndex" = $${paramIdx++}`);
+    params.push(parseInt(costIndex, 10));
   }
 
-  let orderBy = { popularityScore: 'desc' };
-  if (sortBy === 'name') orderBy = { name: 'asc' };
-  if (sortBy === 'cost_asc') orderBy = { costIndex: 'asc' };
-  if (sortBy === 'cost_desc') orderBy = { costIndex: 'desc' };
-  if (sortBy === 'popularity') orderBy = { popularityScore: 'desc' };
+  const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
-  const cities = await prisma.city.findMany({
-    where,
-    include: {
-      _count: {
-        select: { activities: true },
-      },
-    },
-    orderBy,
+  let orderClause = 'ORDER BY c."popularityScore" DESC';
+  if (sortBy === 'name') orderClause = 'ORDER BY c.name ASC';
+  if (sortBy === 'cost_asc') orderClause = 'ORDER BY c."costIndex" ASC';
+  if (sortBy === 'cost_desc') orderClause = 'ORDER BY c."costIndex" DESC';
+  if (sortBy === 'popularity') orderClause = 'ORDER BY c."popularityScore" DESC';
+
+  const queryText = `
+    SELECT c.*, 
+           (SELECT COUNT(*)::int FROM "Activity" a WHERE a."cityId" = c.id) as act_count
+    FROM "City" c
+    ${whereClause}
+    ${orderClause}
+  `;
+
+  const citiesRes = await db.query(queryText, params);
+
+  const cities = citiesRes.rows.map((row) => {
+    const { act_count, ...city } = row;
+    return {
+      ...city,
+      _count: { activities: act_count },
+    };
   });
 
   return ApiResponse.send(res, 200, { cities, total: cities.length }, 'Cities catalog retrieved');
@@ -56,18 +69,17 @@ export const getCities = catchAsync(async (req, res) => {
 export const getCityById = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const city = await prisma.city.findUnique({
-    where: { id },
-    include: {
-      activities: {
-        orderBy: { cost: 'asc' },
-      },
-    },
-  });
-
-  if (!city) {
+  const cityRes = await db.query('SELECT * FROM "City" WHERE id = $1', [id]);
+  if (cityRes.rows.length === 0) {
     throw new ApiError(404, 'City not found');
   }
+  const city = cityRes.rows[0];
+
+  const activitiesRes = await db.query(
+    'SELECT * FROM "Activity" WHERE "cityId" = $1 ORDER BY cost ASC',
+    [id]
+  );
+  city.activities = activitiesRes.rows;
 
   return ApiResponse.send(res, 200, { city }, 'City details retrieved');
 });
@@ -78,54 +90,71 @@ export const getCityById = catchAsync(async (req, res) => {
 export const getActivities = catchAsync(async (req, res) => {
   const { search, cityId, category, maxCost, minCost } = req.query;
 
-  const where = {};
+  const whereConditions = [];
+  const params = [];
+  let paramIdx = 1;
 
   if (search) {
-    where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } },
-    ];
+    whereConditions.push(`(a.name ILIKE $${paramIdx} OR a.description ILIKE $${paramIdx})`);
+    params.push(`%${search}%`);
+    paramIdx++;
   }
 
   if (cityId) {
-    where.cityId = cityId;
+    whereConditions.push(`a."cityId" = $${paramIdx++}`);
+    params.push(cityId);
   }
 
   if (category && category !== 'ALL') {
-    where.category = { equals: category, mode: 'insensitive' };
+    whereConditions.push(`a.category ILIKE $${paramIdx++}`);
+    params.push(category);
   }
 
-  if (maxCost || minCost) {
-    where.cost = {};
-    if (minCost) where.cost.gte = parseFloat(minCost);
-    if (maxCost) where.cost.lte = parseFloat(maxCost);
+  if (minCost) {
+    whereConditions.push(`a.cost >= $${paramIdx++}`);
+    params.push(parseFloat(minCost));
   }
 
-  const activities = await prisma.activity.findMany({
-    where,
-    include: {
-      city: {
-        select: { id: true, name: true, country: true },
-      },
-    },
-    orderBy: { cost: 'asc' },
-  });
+  if (maxCost) {
+    whereConditions.push(`a.cost <= $${paramIdx++}`);
+    params.push(parseFloat(maxCost));
+  }
 
-  return ApiResponse.send(res, 200, { activities, total: activities.length }, 'Activities catalog retrieved');
+  const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+  const queryText = `
+    SELECT a.*, json_build_object('id', c.id, 'name', c.name, 'country', c.country) as city
+    FROM "Activity" a
+    LEFT JOIN "City" c ON a."cityId" = c.id
+    ${whereClause}
+    ORDER BY a.cost ASC
+  `;
+
+  const activitiesRes = await db.query(queryText, params);
+
+  return ApiResponse.send(res, 200, { activities: activitiesRes.rows, total: activitiesRes.rows.length }, 'Activities catalog retrieved');
 });
 
 /**
  * Get featured/trending destinations for Home Page
  */
 export const getFeaturedDestinations = catchAsync(async (req, res) => {
-  const featured = await prisma.city.findMany({
-    take: 6,
-    orderBy: { popularityScore: 'desc' },
-    include: {
-      _count: {
-        select: { activities: true },
-      },
-    },
+  const queryText = `
+    SELECT c.*, 
+           (SELECT COUNT(*)::int FROM "Activity" a WHERE a."cityId" = c.id) as act_count
+    FROM "City" c
+    ORDER BY c."popularityScore" DESC
+    LIMIT 6
+  `;
+
+  const featuredRes = await db.query(queryText);
+
+  const featured = featuredRes.rows.map((row) => {
+    const { act_count, ...city } = row;
+    return {
+      ...city,
+      _count: { activities: act_count },
+    };
   });
 
   return ApiResponse.send(res, 200, { featured }, 'Featured destinations retrieved');
@@ -137,19 +166,16 @@ export const getFeaturedDestinations = catchAsync(async (req, res) => {
 export const getGallery = catchAsync(async (req, res) => {
   const { tag, search } = req.query;
 
-  // Pull images from Cities, Activities, and Public Trips
-  const cities = await prisma.city.findMany({
-    select: { id: true, name: true, country: true, region: true, imageUrl: true, description: true },
-  });
-
-  const activities = await prisma.activity.findMany({
-    include: { city: true },
-  });
+  const citiesRes = await db.query('SELECT id, name, country, region, "imageUrl", description FROM "City"');
+  const activitiesRes = await db.query(
+    `SELECT a.*, json_build_object('id', c.id, 'name', c.name, 'country', c.country) as city
+     FROM "Activity" a
+     LEFT JOIN "City" c ON a."cityId" = c.id`
+  );
 
   let galleryItems = [];
 
-  // Transform cities to gallery items
-  cities.forEach((c, index) => {
+  citiesRes.rows.forEach((c, index) => {
     if (c.imageUrl) {
       galleryItems.push({
         id: `city-${c.id}`,
@@ -165,8 +191,7 @@ export const getGallery = catchAsync(async (req, res) => {
     }
   });
 
-  // Transform activities to gallery items
-  activities.forEach((a, index) => {
+  activitiesRes.rows.forEach((a, index) => {
     if (a.imageUrl) {
       galleryItems.push({
         id: `act-${a.id}`,
@@ -182,14 +207,12 @@ export const getGallery = catchAsync(async (req, res) => {
     }
   });
 
-  // Filter if tag provided
   if (tag && tag !== 'ALL') {
     galleryItems = galleryItems.filter(
       (item) => item.tag.toLowerCase() === tag.toLowerCase() || item.category.toLowerCase() === tag.toLowerCase()
     );
   }
 
-  // Filter if search provided
   if (search) {
     const s = search.toLowerCase();
     galleryItems = galleryItems.filter(

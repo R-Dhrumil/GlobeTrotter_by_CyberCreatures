@@ -1,4 +1,4 @@
-import { prisma } from '../config/db.js';
+import { db } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
@@ -8,6 +8,52 @@ const generateSlug = (name) => {
   const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
   const randomSuffix = Math.random().toString(36).substring(2, 7);
   return `${base}-${randomSuffix}`;
+};
+
+export const fetchFullTrip = async (tripId) => {
+  const tripRes = await db.query(
+    `SELECT t.*, 
+            json_build_object('id', u.id, 'name', u.name, 'email', u.email, 'photoUrl', u."photoUrl") as user
+     FROM "Trip" t
+     LEFT JOIN "User" u ON t."userId" = u.id
+     WHERE t.id = $1`,
+    [tripId]
+  );
+  if (tripRes.rows.length === 0) return null;
+  const trip = tripRes.rows[0];
+
+  const stopsRes = await db.query(
+    `SELECT s.*, 
+            row_to_json(c.*) as city
+     FROM "Stop" s
+     JOIN "City" c ON s."cityId" = c.id
+     WHERE s."tripId" = $1
+     ORDER BY s."orderIndex" ASC`,
+    [tripId]
+  );
+  const stops = stopsRes.rows;
+
+  for (const stop of stops) {
+    const activitiesRes = await db.query(
+      `SELECT sa.*, 
+              row_to_json(a.*) as activity
+       FROM "StopActivity" sa
+       JOIN "Activity" a ON sa."activityId" = a.id
+       WHERE sa."stopId" = $1
+       ORDER BY sa."createdAt" ASC`,
+      [stop.id]
+    );
+    stop.activities = activitiesRes.rows;
+  }
+  trip.stops = stops;
+
+  const budgetsRes = await db.query(
+    `SELECT * FROM "Budget" WHERE "tripId" = $1`,
+    [tripId]
+  );
+  trip.budgets = budgetsRes.rows;
+
+  return trip;
 };
 
 /**
@@ -22,31 +68,23 @@ export const createTrip = catchAsync(async (req, res) => {
 
   const shareSlug = generateSlug(name);
 
-  const trip = await prisma.trip.create({
-    data: {
-      userId: req.user.id,
-      name: name.trim(),
-      startDate: startDate ? new Date(startDate) : null,
-      endDate: endDate ? new Date(endDate) : null,
-      description: description || '',
-      coverPhotoUrl: coverPhotoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80',
-      isPublic: Boolean(isPublic),
+  const insertRes = await db.query(
+    `INSERT INTO "Trip" (id, "userId", name, "startDate", "endDate", description, "coverPhotoUrl", "isPublic", "shareSlug", "updatedAt")
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, NOW())
+     RETURNING id`,
+    [
+      req.user.id,
+      name.trim(),
+      startDate ? new Date(startDate) : null,
+      endDate ? new Date(endDate) : null,
+      description || '',
+      coverPhotoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80',
+      Boolean(isPublic),
       shareSlug,
-    },
-    include: {
-      stops: {
-        include: {
-          city: true,
-          activities: {
-            include: { activity: true },
-          },
-        },
-        orderBy: { orderIndex: 'asc' },
-      },
-      budgets: true,
-    },
-  });
+    ]
+  );
 
+  const trip = await fetchFullTrip(insertRes.rows[0].id);
   return ApiResponse.send(res, 201, { trip }, 'Trip created successfully');
 });
 
@@ -54,22 +92,16 @@ export const createTrip = catchAsync(async (req, res) => {
  * Get all trips for current logged-in user
  */
 export const getMyTrips = catchAsync(async (req, res) => {
-  const trips = await prisma.trip.findMany({
-    where: { userId: req.user.id },
-    include: {
-      stops: {
-        include: {
-          city: true,
-          activities: {
-            include: { activity: true },
-          },
-        },
-        orderBy: { orderIndex: 'asc' },
-      },
-      budgets: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  const tripsRes = await db.query(
+    `SELECT id FROM "Trip" WHERE "userId" = $1 ORDER BY "createdAt" DESC`,
+    [req.user.id]
+  );
+
+  const trips = [];
+  for (const row of tripsRes.rows) {
+    const t = await fetchFullTrip(row.id);
+    if (t) trips.push(t);
+  }
 
   return ApiResponse.send(res, 200, { trips }, 'User trips retrieved successfully');
 });
@@ -80,36 +112,12 @@ export const getMyTrips = catchAsync(async (req, res) => {
 export const getTripById = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const trip = await prisma.trip.findUnique({
-    where: { id },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          photoUrl: true,
-        },
-      },
-      stops: {
-        include: {
-          city: true,
-          activities: {
-            include: { activity: true },
-            orderBy: { createdAt: 'asc' },
-          },
-        },
-        orderBy: { orderIndex: 'asc' },
-      },
-      budgets: true,
-    },
-  });
+  const trip = await fetchFullTrip(id);
 
   if (!trip) {
     throw new ApiError(404, 'Trip not found');
   }
 
-  // Check access: owner or admin or public
   const isOwner = req.user && req.user.id === trip.userId;
   const isAdmin = req.user && req.user.role === 'ADMIN';
 
@@ -127,38 +135,53 @@ export const updateTrip = catchAsync(async (req, res) => {
   const { id } = req.params;
   const { name, startDate, endDate, description, coverPhotoUrl, isPublic } = req.body;
 
-  const trip = await prisma.trip.findUnique({ where: { id } });
-  if (!trip) {
+  const checkRes = await db.query('SELECT * FROM "Trip" WHERE id = $1', [id]);
+  if (checkRes.rows.length === 0) {
     throw new ApiError(404, 'Trip not found');
   }
+  const existingTrip = checkRes.rows[0];
 
-  if (trip.userId !== req.user.id && req.user.role !== 'ADMIN') {
+  if (existingTrip.userId !== req.user.id && req.user.role !== 'ADMIN') {
     throw new ApiError(403, 'Unauthorized to edit this trip');
   }
 
-  const updated = await prisma.trip.update({
-    where: { id },
-    data: {
-      ...(name && { name: name.trim() }),
-      ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
-      ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
-      ...(description !== undefined && { description }),
-      ...(coverPhotoUrl !== undefined && { coverPhotoUrl }),
-      ...(isPublic !== undefined && { isPublic: Boolean(isPublic) }),
-    },
-    include: {
-      stops: {
-        include: {
-          city: true,
-          activities: { include: { activity: true } },
-        },
-        orderBy: { orderIndex: 'asc' },
-      },
-      budgets: true,
-    },
-  });
+  const fields = [];
+  const values = [];
+  let idx = 1;
 
-  return ApiResponse.send(res, 200, { trip: updated }, 'Trip updated successfully');
+  if (name) {
+    fields.push(`name = $${idx++}`);
+    values.push(name.trim());
+  }
+  if (startDate !== undefined) {
+    fields.push(`"startDate" = $${idx++}`);
+    values.push(startDate ? new Date(startDate) : null);
+  }
+  if (endDate !== undefined) {
+    fields.push(`"endDate" = $${idx++}`);
+    values.push(endDate ? new Date(endDate) : null);
+  }
+  if (description !== undefined) {
+    fields.push(`description = $${idx++}`);
+    values.push(description);
+  }
+  if (coverPhotoUrl !== undefined) {
+    fields.push(`"coverPhotoUrl" = $${idx++}`);
+    values.push(coverPhotoUrl);
+  }
+  if (isPublic !== undefined) {
+    fields.push(`"isPublic" = $${idx++}`);
+    values.push(Boolean(isPublic));
+  }
+
+  if (fields.length > 0) {
+    fields.push(`"updatedAt" = NOW()`);
+    values.push(id);
+    await db.query(`UPDATE "Trip" SET ${fields.join(', ')} WHERE id = $${idx}`, values);
+  }
+
+  const updatedTrip = await fetchFullTrip(id);
+  return ApiResponse.send(res, 200, { trip: updatedTrip }, 'Trip updated successfully');
 });
 
 /**
@@ -167,16 +190,17 @@ export const updateTrip = catchAsync(async (req, res) => {
 export const deleteTrip = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const trip = await prisma.trip.findUnique({ where: { id } });
-  if (!trip) {
+  const checkRes = await db.query('SELECT * FROM "Trip" WHERE id = $1', [id]);
+  if (checkRes.rows.length === 0) {
     throw new ApiError(404, 'Trip not found');
   }
+  const trip = checkRes.rows[0];
 
   if (trip.userId !== req.user.id && req.user.role !== 'ADMIN') {
     throw new ApiError(403, 'Unauthorized to delete this trip');
   }
 
-  await prisma.trip.delete({ where: { id } });
+  await db.query('DELETE FROM "Trip" WHERE id = $1', [id]);
 
   return ApiResponse.send(res, 200, null, 'Trip deleted successfully');
 });
@@ -187,38 +211,17 @@ export const deleteTrip = catchAsync(async (req, res) => {
 export const getPublicTripBySlug = catchAsync(async (req, res) => {
   const { slug } = req.params;
 
-  const trip = await prisma.trip.findUnique({
-    where: { shareSlug: slug },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          photoUrl: true,
-        },
-      },
-      stops: {
-        include: {
-          city: true,
-          activities: {
-            include: { activity: true },
-            orderBy: { createdAt: 'asc' },
-          },
-        },
-        orderBy: { orderIndex: 'asc' },
-      },
-      budgets: true,
-    },
-  });
-
-  if (!trip) {
+  const tripRes = await db.query('SELECT id, "isPublic" FROM "Trip" WHERE "shareSlug" = $1', [slug]);
+  if (tripRes.rows.length === 0) {
     throw new ApiError(404, 'Shared trip not found');
   }
+  const meta = tripRes.rows[0];
 
-  if (!trip.isPublic) {
+  if (!meta.isPublic) {
     throw new ApiError(403, 'This trip is marked as private by the author');
   }
 
+  const trip = await fetchFullTrip(meta.id);
   return ApiResponse.send(res, 200, { trip }, 'Shared trip details retrieved');
 });
 
@@ -228,18 +231,7 @@ export const getPublicTripBySlug = catchAsync(async (req, res) => {
 export const copyTrip = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const sourceTrip = await prisma.trip.findUnique({
-    where: { id },
-    include: {
-      stops: {
-        include: {
-          activities: true,
-        },
-        orderBy: { orderIndex: 'asc' },
-      },
-      budgets: true,
-    },
-  });
+  const sourceTrip = await fetchFullTrip(id);
 
   if (!sourceTrip) {
     throw new ApiError(404, 'Source trip not found');
@@ -251,70 +243,49 @@ export const copyTrip = catchAsync(async (req, res) => {
 
   const newSlug = generateSlug(`${sourceTrip.name} (Copy)`);
 
-  const clonedTrip = await prisma.trip.create({
-    data: {
-      userId: req.user.id,
-      name: `${sourceTrip.name} (Copy)`,
-      startDate: sourceTrip.startDate,
-      endDate: sourceTrip.endDate,
-      description: sourceTrip.description,
-      coverPhotoUrl: sourceTrip.coverPhotoUrl,
-      isPublic: false,
-      shareSlug: newSlug,
-    },
-  });
+  const clonedRes = await db.query(
+    `INSERT INTO "Trip" (id, "userId", name, "startDate", "endDate", description, "coverPhotoUrl", "isPublic", "shareSlug", "updatedAt")
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, NOW())
+     RETURNING id`,
+    [
+      req.user.id,
+      `${sourceTrip.name} (Copy)`,
+      sourceTrip.startDate,
+      sourceTrip.endDate,
+      sourceTrip.description,
+      sourceTrip.coverPhotoUrl,
+      false,
+      newSlug,
+    ]
+  );
+  const newTripId = clonedRes.rows[0].id;
 
-  // Clone stops and stop activities
   for (const stop of sourceTrip.stops) {
-    const newStop = await prisma.stop.create({
-      data: {
-        tripId: clonedTrip.id,
-        cityId: stop.cityId,
-        orderIndex: stop.orderIndex,
-        arrivalDate: stop.arrivalDate,
-        departureDate: stop.departureDate,
-      },
-    });
+    const newStopRes = await db.query(
+      `INSERT INTO "Stop" (id, "tripId", "cityId", "orderIndex", "arrivalDate", "departureDate", "updatedAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW())
+       RETURNING id`,
+      [newTripId, stop.cityId, stop.orderIndex, stop.arrivalDate, stop.departureDate]
+    );
+    const newStopId = newStopRes.rows[0].id;
 
-    for (const act of stop.activities) {
-      await prisma.stopActivity.create({
-        data: {
-          stopId: newStop.id,
-          activityId: act.activityId,
-          scheduledDate: act.scheduledDate,
-          scheduledTime: act.scheduledTime,
-          notes: act.notes,
-        },
-      });
+    for (const act of stop.activities || []) {
+      await db.query(
+        `INSERT INTO "StopActivity" (id, "stopId", "activityId", "scheduledDate", "scheduledTime", notes, "updatedAt")
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW())`,
+        [newStopId, act.activityId, act.scheduledDate, act.scheduledTime, act.notes]
+      );
     }
   }
 
-  // Clone budgets
-  for (const b of sourceTrip.budgets) {
-    await prisma.budget.create({
-      data: {
-        tripId: clonedTrip.id,
-        category: b.category,
-        estimatedAmount: b.estimatedAmount,
-        actualAmount: b.actualAmount,
-        notes: b.notes,
-      },
-    });
+  for (const b of sourceTrip.budgets || []) {
+    await db.query(
+      `INSERT INTO "Budget" (id, "tripId", category, "estimatedAmount", "actualAmount", notes, "updatedAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW())`,
+      [newTripId, b.category, b.estimatedAmount, b.actualAmount, b.notes]
+    );
   }
 
-  const completeTrip = await prisma.trip.findUnique({
-    where: { id: clonedTrip.id },
-    include: {
-      stops: {
-        include: {
-          city: true,
-          activities: { include: { activity: true } },
-        },
-        orderBy: { orderIndex: 'asc' },
-      },
-      budgets: true,
-    },
-  });
-
+  const completeTrip = await fetchFullTrip(newTripId);
   return ApiResponse.send(res, 201, { trip: completeTrip }, 'Trip copied to your itinerary!');
 });

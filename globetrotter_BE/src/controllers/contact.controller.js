@@ -1,4 +1,4 @@
-import { prisma } from '../config/db.js';
+import { db } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
@@ -16,21 +16,17 @@ export const submitContact = catchAsync(async (req, res) => {
 
   const cleanEmail = email.toLowerCase().trim();
 
-  const contactMessage = await prisma.contactMessage.create({
-    data: {
-      name: name.trim(),
-      email: cleanEmail,
-      subject: subject || 'GlobeTrotter General Inquiry',
-      message: message.trim(),
-    },
-  });
+  const insertRes = await db.query(
+    `INSERT INTO "ContactMessage" (id, name, email, subject, message)
+     VALUES (gen_random_uuid(), $1, $2, $3, $4)
+     RETURNING *`,
+    [name.trim(), cleanEmail, subject || 'GlobeTrotter General Inquiry', message.trim()]
+  );
+  const contactMessage = insertRes.rows[0];
 
-  // Attempt to forward via SMTP if configured
   try {
-    const smtpSettings = await prisma.siteSetting.findMany({
-      where: { group: 'SMTP' },
-    });
-    const fromEmail = smtpSettings.find((s) => s.key === 'smtp_from_email')?.value || 'concierge@globetrotter.com';
+    const smtpRes = await db.query('SELECT * FROM "SiteSetting" WHERE group = $1', ['SMTP']);
+    const fromEmail = smtpRes.rows.find((s) => s.key === 'smtp_from_email')?.value || 'concierge@globetrotter.com';
 
     await sendEmail({
       to: fromEmail,
@@ -54,11 +50,9 @@ export const submitContact = catchAsync(async (req, res) => {
  * Get all contact messages (Admin only)
  */
 export const getContactMessages = catchAsync(async (req, res) => {
-  const messages = await prisma.contactMessage.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  const msgRes = await db.query('SELECT * FROM "ContactMessage" ORDER BY "createdAt" DESC');
 
-  return ApiResponse.send(res, 200, { messages, count: messages.length }, 'Contact messages retrieved');
+  return ApiResponse.send(res, 200, { messages: msgRes.rows, count: msgRes.rows.length }, 'Contact messages retrieved');
 });
 
 /**
@@ -67,12 +61,12 @@ export const getContactMessages = catchAsync(async (req, res) => {
 export const markMessageRead = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const updated = await prisma.contactMessage.update({
-    where: { id },
-    data: { isRead: true },
-  });
+  const updateRes = await db.query('UPDATE "ContactMessage" SET "isRead" = true WHERE id = $1 RETURNING *', [id]);
+  if (updateRes.rows.length === 0) {
+    throw new ApiError(404, 'Message not found');
+  }
 
-  return ApiResponse.send(res, 200, { message: updated }, 'Message marked as read');
+  return ApiResponse.send(res, 200, { message: updateRes.rows[0] }, 'Message marked as read');
 });
 
 /**
@@ -81,7 +75,7 @@ export const markMessageRead = catchAsync(async (req, res) => {
 export const deleteMessage = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  await prisma.contactMessage.delete({ where: { id } });
+  await db.query('DELETE FROM "ContactMessage" WHERE id = $1', [id]);
 
   return ApiResponse.send(res, 200, null, 'Message deleted');
 });

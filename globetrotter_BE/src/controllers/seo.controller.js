@@ -1,4 +1,4 @@
-import { prisma } from '../config/db.js';
+import { db } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
@@ -7,9 +7,8 @@ import { catchAsync } from '../utils/catchAsync.js';
  * Get all SEO settings (Public endpoint consumed by React Helmet Async)
  */
 export const getSeoSettings = catchAsync(async (req, res) => {
-  const seoSettings = await prisma.siteSetting.findMany({
-    where: { group: 'SEO' },
-  });
+  const seoRes = await db.query('SELECT * FROM "SiteSetting" WHERE group = $1', ['SEO']);
+  const seoSettings = seoRes.rows;
 
   const seoMap = {
     home: {
@@ -82,15 +81,12 @@ export const updateSeoSettings = catchAsync(async (req, res) => {
 
   for (const item of updates) {
     if (item.value !== undefined) {
-      await prisma.siteSetting.upsert({
-        where: { key: item.key },
-        update: { value: String(item.value) },
-        create: {
-          key: item.key,
-          value: String(item.value),
-          group: 'SEO',
-        },
-      });
+      await db.query(
+        `INSERT INTO "SiteSetting" (id, key, value, group, "updatedAt")
+         VALUES (gen_random_uuid(), $1, $2, 'SEO', NOW())
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, "updatedAt" = NOW()`,
+        [item.key, String(item.value)]
+      );
     }
   }
 

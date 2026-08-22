@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { prisma } from '../config/db.js';
+import { db } from '../config/db.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -13,26 +13,23 @@ export const createUser = catchAsync(async (req, res) => {
     throw new ApiError(400, 'Name, email, and password are required');
   }
 
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
+  const existingRes = await db.query('SELECT * FROM "User" WHERE email = $1', [email]);
+  if (existingRes.rows.length > 0) {
     throw new ApiError(400, 'User already exists with this email');
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      password: hashedPassword,
-      role: role || 'USER',
-      department: department || 'General',
-    },
-  });
+  const insertRes = await db.query(
+    `INSERT INTO "User" (id, name, email, password, role, department, "updatedAt")
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW())
+     RETURNING *`,
+    [name, email, hashedPassword, role || 'USER', department || 'General']
+  );
 
+  const user = insertRes.rows[0];
   delete user.password;
 
-  // Send styled HTML account creation notification email asynchronously
   sendEmail({
     to: email,
     subject: 'Welcome! Your Account Has Been Created',
@@ -43,29 +40,31 @@ export const createUser = catchAsync(async (req, res) => {
 });
 
 export const getAllUsers = catchAsync(async (req, res) => {
-  const users = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true, department: true, isActive: true, createdAt: true },
-  });
-  return ApiResponse.send(res, 200, { count: users.length, users }, 'All users fetched successfully');
+  const usersRes = await db.query(
+    'SELECT id, name, email, role, department, "isActive", "createdAt" FROM "User" ORDER BY "createdAt" DESC'
+  );
+  return ApiResponse.send(res, 200, { count: usersRes.rows.length, users: usersRes.rows }, 'All users fetched successfully');
 });
 
 export const getUserById = catchAsync(async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.params.id },
-    select: { id: true, name: true, email: true, role: true, department: true, isActive: true, createdAt: true },
-  });
-  if (!user) {
+  const userRes = await db.query(
+    'SELECT id, name, email, role, department, "isActive", "createdAt" FROM "User" WHERE id = $1',
+    [req.params.id]
+  );
+  if (userRes.rows.length === 0) {
     throw new ApiError(404, 'User not found');
   }
-  return ApiResponse.send(res, 200, { user }, 'User details fetched');
+  return ApiResponse.send(res, 200, { user: userRes.rows[0] }, 'User details fetched');
 });
 
 export const updateUserRole = catchAsync(async (req, res) => {
   const { role } = req.body;
-  const user = await prisma.user.update({
-    where: { id: req.params.id },
-    data: { role },
-    select: { id: true, name: true, email: true, role: true, department: true },
-  });
-  return ApiResponse.send(res, 200, { user }, 'User role updated successfully');
+  const updateRes = await db.query(
+    'UPDATE "User" SET role = $1, "updatedAt" = NOW() WHERE id = $2 RETURNING id, name, email, role, department',
+    [role, req.params.id]
+  );
+  if (updateRes.rows.length === 0) {
+    throw new ApiError(404, 'User not found');
+  }
+  return ApiResponse.send(res, 200, { user: updateRes.rows[0] }, 'User role updated successfully');
 });
