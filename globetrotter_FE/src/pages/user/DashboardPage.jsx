@@ -64,10 +64,13 @@ export const DashboardPage = () => {
     (acc, t) => acc + t.stops?.reduce((sAcc, s) => sAcc + (s.activities?.length || 0), 0),
     0
   );
-  const totalEstimatedBudget = trips.reduce(
-    (acc, t) => acc + t.budgets?.reduce((bAcc, b) => bAcc + (b.estimatedAmount || 0), 0),
-    0
-  );
+  const totalEstimatedBudget = trips.reduce((acc, t) => {
+    const bSum =
+      t.budgets && t.budgets.length > 0
+        ? t.budgets.reduce((bAcc, b) => bAcc + (parseFloat(b.estimatedAmount) || 0), 0)
+        : parseFloat(t.estimatedBudget) || 0;
+    return acc + bSum;
+  }, 0);
 
   const upcomingTrip = trips[0];
 
