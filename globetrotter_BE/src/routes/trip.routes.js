@@ -31,6 +31,9 @@ const router = Router();
 // Public shared route
 router.get('/share/:slug', getPublicTripBySlug);
 
+// Public group invite validation
+router.get('/group/validate/:token', validateInviteToken);
+
 // All following routes require authentication
 router.use(authenticate);
 
@@ -62,7 +65,6 @@ router.delete('/budget/:id', deleteBudget);
 router.post('/:tripId/group/enable', enableGroupTrip);
 router.get('/:tripId/group/invite-link', getInviteLink);
 router.post('/group/join/:token', joinGroupTrip);
-router.get('/group/validate/:token', validateInviteToken);
 router.get('/:tripId/group/members', getGroupMembers);
 router.delete('/:tripId/group/members/:userId', removeGroupMember);
 router.post('/:tripId/group/expenses', addGroupExpense);
