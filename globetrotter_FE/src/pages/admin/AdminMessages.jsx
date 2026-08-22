@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { contactAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
+import { useToast } from '../../context/ToastContext';
 import {
   MessageSquare,
   Mail,
@@ -11,8 +13,16 @@ import {
 } from 'lucide-react';
 
 export const AdminMessages = () => {
+  const { showSuccess, showError } = useToast();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+  });
 
   useEffect(() => {
     fetchMessages();
@@ -37,19 +47,30 @@ export const AdminMessages = () => {
       setMessages((prev) =>
         prev.map((m) => (m.id === id ? { ...m, isRead: true } : m))
       );
+      showSuccess('Message marked as read');
     } catch (err) {
-      alert(err.message || 'Failed to mark as read');
+      showError(err.message || 'Failed to mark as read');
     }
   };
 
-  const handleDeleteMessage = async (id) => {
-    if (!window.confirm('Delete this message?')) return;
-    try {
-      await contactAPI.deleteMessage(id);
-      setMessages((prev) => prev.filter((m) => m.id !== id));
-    } catch (err) {
-      alert(err.message || 'Failed to delete message');
-    }
+  const handleDeleteMessage = (id) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Message?',
+      message: 'Are you sure you want to delete this inquiry message?',
+      confirmText: 'Delete Message',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await contactAPI.deleteMessage(id);
+          setMessages((prev) => prev.filter((m) => m.id !== id));
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          showSuccess('Message deleted');
+        } catch (err) {
+          showError(err.message || 'Failed to delete message');
+        }
+      },
+    });
   };
 
   if (loading) return <LoadingSpinner fullScreen text="Loading traveler inquiries..." />;
@@ -131,6 +152,16 @@ export const AdminMessages = () => {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
+      />
     </div>
   );
 };

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { tripAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
+import { useToast } from '../../context/ToastContext';
 import {
   DollarSign,
   PieChart as PieIcon,
@@ -39,11 +41,19 @@ const CATEGORIES = ['TRANSPORT', 'STAY', 'ACTIVITIES', 'MEALS', 'OTHER'];
 
 export const BudgetPage = () => {
   const { id } = useParams();
+  const { showSuccess, showError } = useToast();
 
   const [trip, setTrip] = useState(null);
   const [budgetData, setBudgetData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [savingCategory, setSavingCategory] = useState(false);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+  });
 
   // Form to update/add category
   const [activeCategory, setActiveCategory] = useState('TRANSPORT');
@@ -81,23 +91,33 @@ export const BudgetPage = () => {
         actualAmount: categoryActual ? parseFloat(categoryActual) : 0,
         notes: categoryNotes,
       });
-      alert('Budget saved!');
+      showSuccess(`✨ ${activeCategory} budget updated successfully!`);
       loadTripAndBudget();
     } catch (err) {
-      alert(err.message || 'Failed to save budget');
+      showError(err.message || 'Failed to save budget');
     } finally {
       setSavingCategory(false);
     }
   };
 
-  const handleDeleteBudget = async (budgetId) => {
-    if (!window.confirm('Delete this budget entry?')) return;
-    try {
-      await tripAPI.deleteBudget(budgetId);
-      loadTripAndBudget();
-    } catch (err) {
-      alert(err.message || 'Failed to delete entry');
-    }
+  const handleDeleteBudget = (budgetId, category) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Budget Entry?',
+      message: `Are you sure you want to delete the ${category || ''} budget allocation?`,
+      confirmText: 'Delete Entry',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await tripAPI.deleteBudget(budgetId);
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          showSuccess('Budget entry deleted');
+          loadTripAndBudget();
+        } catch (err) {
+          showError(err.message || 'Failed to delete entry');
+        }
+      },
+    });
   };
 
   if (loading) return <LoadingSpinner fullScreen text="Calculating trip budget analytics..." />;
@@ -401,7 +421,7 @@ export const BudgetPage = () => {
                         <td className="py-3 text-stone-500 max-w-xs truncate">{b.notes || '—'}</td>
                         <td className="py-3 text-right">
                           <button
-                            onClick={() => handleDeleteBudget(b.id)}
+                            onClick={() => handleDeleteBudget(b.id, b.category)}
                             className="p-1.5 text-stone-400 hover:text-rose-600 transition"
                             title="Delete"
                           >
@@ -417,6 +437,16 @@ export const BudgetPage = () => {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
+      />
     </div>
   );
 };

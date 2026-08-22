@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
+import { useToast } from '../../context/ToastContext';
 import {
   Users,
   Search,
@@ -14,11 +16,20 @@ import {
 } from 'lucide-react';
 
 export const AdminUsers = () => {
+  const { showSuccess, showError } = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+    type: 'danger',
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -47,47 +58,84 @@ export const AdminUsers = () => {
     fetchUsers();
   };
 
-  const handleToggleRole = async (user) => {
+  const handleToggleRole = (user) => {
     const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
-    if (!window.confirm(`Change ${user.name}'s role to ${newRole}?`)) return;
-
-    try {
-      await adminAPI.updateRole(user.id, newRole);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u))
-      );
-    } catch (err) {
-      alert(err.message || 'Failed to update role');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Change User Role?',
+      message: `Are you sure you want to change ${user.name}'s role to ${newRole}?`,
+      confirmText: 'Change Role',
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          await adminAPI.updateRole(user.id, newRole);
+          setUsers((prev) =>
+            prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u))
+          );
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          showSuccess(`User role updated to ${newRole}`);
+        } catch (err) {
+          showError(err.message || 'Failed to update role');
+        }
+      },
+    });
   };
 
-  const handleToggleStatus = async (user) => {
+  const handleToggleStatus = (user) => {
     const newStatus = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-    if (!window.confirm(`Set ${user.name}'s status to ${newStatus}?`)) return;
-
-    try {
-      await adminAPI.updateStatus(user.id, newStatus);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u))
-      );
-    } catch (err) {
-      alert(err.message || 'Failed to update status');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Change User Status?',
+      message: `Are you sure you want to set ${user.name}'s account status to ${newStatus}?`,
+      confirmText: `${newStatus} Account`,
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          await adminAPI.updateStatus(user.id, newStatus);
+          setUsers((prev) =>
+            prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u))
+          );
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          showSuccess(`User status updated to ${newStatus}`);
+        } catch (err) {
+          showError(err.message || 'Failed to update status');
+        }
+      },
+    });
   };
 
-  const handleDeleteUser = async (user) => {
-    if (!window.confirm(`Permanently delete account for "${user.name}"? This deletes all their trips.`)) return;
-
-    try {
-      await adminAPI.deleteUser(user.id);
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
-    } catch (err) {
-      alert(err.message || 'Failed to delete user');
-    }
+  const handleDeleteUser = (user) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete User Account?',
+      message: `Are you sure you want to permanently delete account for "${user.name}"? This action removes all their trips.`,
+      confirmText: 'Delete Account',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await adminAPI.deleteUser(user.id);
+          setUsers((prev) => prev.filter((u) => u.id !== user.id));
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          showSuccess('User account deleted');
+        } catch (err) {
+          showError(err.message || 'Failed to delete user');
+        }
+      },
+    });
   };
 
   return (
     <div className="space-y-8">
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
+      />
+      
       {/* Header */}
       <div>
         <span className="text-xs font-bold uppercase tracking-widest text-amber-600">
@@ -251,6 +299,16 @@ export const AdminUsers = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
+      />
     </div>
   );
 };
