@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import logo from '../../assets/logo.png';
 import {
   Compass,
   Map,
@@ -38,8 +39,8 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-20">
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white shadow-md shadow-amber-500/20 group-hover:scale-105 transition duration-300">
-              <Compass className="w-6 h-6 animate-pulse" />
+            <div className="w-15 h-15 rounded-2xl bg-white flex items-center justify-center shadow-md shadow-amber-500/10 group-hover:scale-105 transition duration-300">
+              <img src={logo} alt="GlobeTrotter Logo" className="w-12 h-12 object-contain" />
             </div>
             <div>
               <span className="text-2xl font-bold font-serif tracking-tight text-stone-900 block leading-tight">
@@ -55,33 +56,29 @@ export const Navbar = () => {
           <nav className="hidden md:flex items-center gap-8">
             <Link
               to="/"
-              className={`text-sm font-medium transition ${
-                isActive('/') ? 'text-amber-600 font-semibold' : 'text-stone-600 hover:text-stone-900'
-              }`}
+              className={`text-sm font-medium transition ${isActive('/') ? 'text-amber-600 font-semibold' : 'text-stone-600 hover:text-stone-900'
+                }`}
             >
               Home
             </Link>
             <Link
               to="/about"
-              className={`text-sm font-medium transition ${
-                isActive('/about') ? 'text-amber-600 font-semibold' : 'text-stone-600 hover:text-stone-900'
-              }`}
+              className={`text-sm font-medium transition ${isActive('/about') ? 'text-amber-600 font-semibold' : 'text-stone-600 hover:text-stone-900'
+                }`}
             >
               About Us
             </Link>
             <Link
               to="/gallery"
-              className={`text-sm font-medium transition ${
-                isActive('/gallery') ? 'text-amber-600 font-semibold' : 'text-stone-600 hover:text-stone-900'
-              }`}
+              className={`text-sm font-medium transition ${isActive('/gallery') ? 'text-amber-600 font-semibold' : 'text-stone-600 hover:text-stone-900'
+                }`}
             >
               Gallery
             </Link>
             <Link
               to="/contact"
-              className={`text-sm font-medium transition ${
-                isActive('/contact') ? 'text-amber-600 font-semibold' : 'text-stone-600 hover:text-stone-900'
-              }`}
+              className={`text-sm font-medium transition ${isActive('/contact') ? 'text-amber-600 font-semibold' : 'text-stone-600 hover:text-stone-900'
+                }`}
             >
               Contact
             </Link>
