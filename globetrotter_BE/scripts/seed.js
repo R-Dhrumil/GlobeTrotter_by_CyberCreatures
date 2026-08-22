@@ -142,7 +142,7 @@ async function main() {
 
   for (const s of defaultSettings) {
     await query(
-      `INSERT INTO "SiteSetting" (id, key, value, group, "updatedAt")
+      `INSERT INTO "SiteSetting" (id, key, value, "group", "updatedAt")
        VALUES (gen_random_uuid(), $1, $2, $3, NOW())
        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
       [s.key, s.value, s.group]
