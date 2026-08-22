@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Heart, Share2, MapPin, Tag } from 'lucide-react';
 import { copyToClipboard } from '../../utils/clipboard';
 
@@ -19,9 +20,9 @@ export const Lightbox = ({ isOpen, onClose, item }) => {
 
   if (!isOpen || !item) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-8 animate-fade-in"
+      className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-8 animate-fade-in"
       onClick={onClose}
     >
       {/* Close button */}
@@ -87,6 +88,8 @@ export const Lightbox = ({ isOpen, onClose, item }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
+
