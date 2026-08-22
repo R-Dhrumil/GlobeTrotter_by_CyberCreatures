@@ -192,9 +192,21 @@ export const ItineraryBuilderPage = () => {
   };
 
   // Add Activity to Stop
-  const handleOpenAddActivity = (stop) => {
+  const handleOpenAddActivity = async (stop) => {
     setSelectedStopForActivity(stop);
-    setSelectedActivityId(stop.city?.activities?.[0]?.id || '');
+    let acts = stop.city?.activities || [];
+    if (acts.length === 0 && stop.cityId) {
+      try {
+        const res = await catalogAPI.getActivities({ cityId: stop.cityId });
+        if (res.data?.activities) {
+          acts = res.data.activities;
+          stop.city = { ...stop.city, activities: acts };
+        }
+      } catch (e) {
+        console.error('Failed to fetch city activities', e);
+      }
+    }
+    setSelectedActivityId(acts[0]?.id || '');
     setAddActivityModalOpen(true);
   };
 
@@ -916,22 +928,53 @@ export const ItineraryBuilderPage = () => {
         <form onSubmit={handleSaveActivity} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-              Select Activity *
+              Select Famous {selectedStopForActivity?.city?.name || 'City'} Experience *
             </label>
             <select
               required
               value={selectedActivityId}
               onChange={(e) => setSelectedActivityId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-sm text-stone-900 focus:outline-none focus:border-amber-600"
+              className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-sm font-semibold text-stone-900 focus:outline-none focus:border-amber-600 bg-white"
             >
-              <option value="">-- Choose an Activity --</option>
+              <option value="">-- Choose Famous Activity in {selectedStopForActivity?.city?.name || 'City'} --</option>
               {selectedStopForActivity?.city?.activities?.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.name} (${a.cost} • {a.durationMinutes}m • {a.category})
+                  🌟 {a.name} — {a.cost === 0 ? 'Free' : `$${a.cost}`} ({a.category} • {a.durationMinutes} mins)
                 </option>
               ))}
             </select>
           </div>
+
+          {/* Live Activity Preview Card */}
+          {(() => {
+            const chosenAct = selectedStopForActivity?.city?.activities?.find((a) => a.id === selectedActivityId);
+            if (!chosenAct) return null;
+            return (
+              <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200/80 flex items-start gap-3">
+                {chosenAct.imageUrl && (
+                  <img
+                    src={chosenAct.imageUrl}
+                    alt={chosenAct.name}
+                    className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm"
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
+                      {chosenAct.category}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-700">
+                      {chosenAct.cost === 0 ? 'Free Experience' : `$${chosenAct.cost} per person`}
+                    </span>
+                  </div>
+                  <h5 className="text-xs font-bold text-stone-900 font-serif mt-1">{chosenAct.name}</h5>
+                  <p className="text-[11px] text-stone-600 line-clamp-2 mt-0.5 leading-relaxed">
+                    {chosenAct.description}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="grid grid-cols-2 gap-4">
             <div>

@@ -133,28 +133,113 @@ async function main() {
   console.log(`✅ Created ${Object.keys(createdCities).length} worldwide cities across Countries & States.`);
 
   const activitiesData = [
-    // Jaipur & Agra & Mumbai
+    // TOKYO
+    { cityName: 'Tokyo', name: 'Shibuya Crossing & Harajuku Street Food Tour', category: 'Food & Drink', cost: 65, durationMinutes: 180, description: 'Taste authentic ramen, takoyaki, and crepe delicacies through Shibuya neon alleys.', imageUrl: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Tokyo', name: 'Senso-ji Temple & Asakusa Traditional Walk', category: 'Culture', cost: 0, durationMinutes: 120, description: 'Explore Tokyo’s oldest Buddhist temple, Nakamise shopping street, and incense rituals.', imageUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Tokyo', name: 'teamLab Planets Digital Immersive Art Museum', category: 'Culture', cost: 38, durationMinutes: 90, description: 'Walk through body-immersive water galleries and glowing digital gardens.', imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Tokyo', name: 'Tsukiji Outer Market Fresh Seafood Crawl', category: 'Food & Drink', cost: 50, durationMinutes: 150, description: 'Sample fresh sashimi, tamagoyaki, wagyu skewers, and matcha ice cream.', imageUrl: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80' },
+
+    // KYOTO
+    { cityName: 'Kyoto', name: 'Fushimi Inari Torii Gate Early Morning Hike', category: 'Nature', cost: 0, durationMinutes: 150, description: 'Ascend Mount Inari through thousands of sacred vermilion torii gates.', imageUrl: 'https://images.unsplash.com/photo-1478436127897-769e1b3f0f36?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Kyoto', name: 'Arashiyama Bamboo Grove & Tenryu-ji Zen Garden', category: 'Sightseeing', cost: 10, durationMinutes: 120, description: 'Stroll beneath towering bamboo stalks and UNESCO World Heritage gardens.', imageUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Kyoto', name: 'Gion Geisha District Evening Lantern Tour', category: 'Culture', cost: 35, durationMinutes: 90, description: 'Discover traditional wooden machiya townhouses and teahouse culture.', imageUrl: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80' },
+
+    // PARIS
+    { cityName: 'Paris', name: 'Louvre Museum Skip-the-Line Masterpiece Tour', category: 'Culture', cost: 55, durationMinutes: 150, description: 'Priority access seeing the Mona Lisa, Venus de Milo, and Winged Victory.', imageUrl: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Paris', name: 'Eiffel Tower Summit & Seine River Sunset Cruise', category: 'Sightseeing', cost: 75, durationMinutes: 180, description: 'Ascend to the top of Paris followed by a romantic glass boat river cruise.', imageUrl: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Paris', name: 'Palace of Versailles Hall of Mirrors & Royal Gardens', category: 'Culture', cost: 45, durationMinutes: 240, description: 'Explore opulent royal apartments, glittering mirrors, and fountain gardens.', imageUrl: 'https://images.unsplash.com/photo-1584003564911-a7a321c84e1c?auto=format&fit=crop&w=800&q=80' },
+
+    // ROME
+    { cityName: 'Rome', name: 'Colosseum Underground & Gladiators Arena Floor', category: 'Sightseeing', cost: 80, durationMinutes: 180, description: 'Access subterranean staging tunnels and step onto the restored arena floor.', imageUrl: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Rome', name: 'Vatican Museums & Sistine Chapel Priority Tour', category: 'Culture', cost: 65, durationMinutes: 210, description: 'Marvel at Michelangelo’s ceiling frescoes and St. Peter’s Basilica.', imageUrl: 'https://images.unsplash.com/photo-1531572753322-ad063cecc140?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Rome', name: 'Trastevere Evening Food & Wine Tasting Crawl', category: 'Food & Drink', cost: 70, durationMinutes: 180, description: 'Sample carbonara, supplì, artisanal gelato, and Chianti wines.', imageUrl: 'https://images.unsplash.com/photo-1515542622106-78bda8ba0e5b?auto=format&fit=crop&w=800&q=80' },
+
+    // LONDON
+    { cityName: 'London', name: 'Tower of London & Crown Jewels Guided Tour', category: 'Sightseeing', cost: 45, durationMinutes: 150, description: 'See the glittering Crown Jewels and historic fortress with Yeoman Warders.', imageUrl: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'London', name: 'London Eye Flight & Thames River Hop-on Boat', category: 'Sightseeing', cost: 40, durationMinutes: 120, description: 'Soar 135 meters above the skyline with views of Big Ben and Parliament.', imageUrl: 'https://images.unsplash.com/photo-1486299267070-83823f5448dd?auto=format&fit=crop&w=800&q=80' },
+
+    // BARCELONA
+    { cityName: 'Barcelona', name: 'Sagrada Familia Priority Entry & Gaudi Tower Climb', category: 'Culture', cost: 40, durationMinutes: 120, description: 'Marvel at Gaudí’s stained-glass forest columns and city panorama towers.', imageUrl: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Barcelona', name: 'Park Güell Mosaic Terrace & Dragon Staircase', category: 'Sightseeing', cost: 20, durationMinutes: 90, description: 'Explore whimsical mosaic benches and gingerbread houses overlooking the sea.', imageUrl: 'https://images.unsplash.com/photo-1583422409516-2895a771deda?auto=format&fit=crop&w=800&q=80' },
+
+    // NEW YORK CITY
+    { cityName: 'New York City', name: 'Statue of Liberty & Ellis Island Priority Ferry', category: 'Sightseeing', cost: 30, durationMinutes: 210, description: 'Step onto Liberty Island and explore the historic immigration museum.', imageUrl: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'New York City', name: 'Empire State Building 86th Floor Observatory', category: 'Sightseeing', cost: 44, durationMinutes: 90, description: '360-degree open-air views of Manhattan skyscrapers and Hudson River.', imageUrl: 'https://images.unsplash.com/photo-1534430480872-3498386e7856?auto=format&fit=crop&w=800&q=80' },
+
+    // LOS ANGELES
+    { cityName: 'Los Angeles', name: 'Hollywood Sign & Griffith Observatory Scenic Hike', category: 'Adventure', cost: 25, durationMinutes: 180, description: 'Hike through Hollywood Hills for close-up photo ops of the iconic sign.', imageUrl: 'https://images.unsplash.com/photo-1580655653885-65763b2597d0?auto=format&fit=crop&w=800&q=80' },
+
+    // BANGKOK
+    { cityName: 'Bangkok', name: 'Grand Palace & Emerald Buddha Guided Tour', category: 'Culture', cost: 25, durationMinutes: 150, description: 'Marvel at gold-spired Siamese architecture and sacred emerald Buddha.', imageUrl: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Bangkok', name: 'Damnoen Saduak Floating Market Longtail Boat', category: 'Food & Drink', cost: 30, durationMinutes: 240, description: 'Ride wooden boats sampling coconut pancakes and boat noodles from vendors.', imageUrl: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=800&q=80' },
+
+    // DUBAI
+    { cityName: 'Dubai', name: 'Burj Khalifa 124th Floor Skydeck & Fountain Show', category: 'Sightseeing', cost: 60, durationMinutes: 120, description: 'Stand atop the world’s tallest skyscraper followed by dancing fountain lights.', imageUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Dubai', name: 'Red Dune Desert Safari, Camel Ride & BBQ Dinner', category: 'Adventure', cost: 85, durationMinutes: 360, description: '4x4 dune bashing, sandboarding, falconry, camel riding, and starlit buffet.', imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80' },
+
+    // SYDNEY
+    { cityName: 'Sydney', name: 'Sydney Opera House Guided Architectural Tour', category: 'Culture', cost: 35, durationMinutes: 90, description: 'Explore behind the scenes of Bennelong Point’s famous vaulted sails.', imageUrl: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80' },
+    { cityName: 'Sydney', name: 'Bondi to Coogee Coastal Walk & Surf Lesson', category: 'Adventure', cost: 50, durationMinutes: 180, description: 'Walk ocean cliffs, spot whales, and catch waves with certified surfers.', imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80' },
+
+    // CAIRO
+    { cityName: 'Cairo', name: 'Giza Pyramids & Great Sphinx Camel Safari', category: 'Sightseeing', cost: 50, durationMinutes: 240, description: 'Ride camels across Sahara desert dunes with views of Great Pyramids.', imageUrl: 'https://images.unsplash.com/photo-1572252821128-44477d612e43?auto=format&fit=crop&w=800&q=80' },
+
+    // CAPE TOWN
+    { cityName: 'Cape Town', name: 'Table Mountain Aerial Cableway Sunset Summit', category: 'Nature', cost: 22, durationMinutes: 120, description: 'Ride revolving cable cars to flat-topped summit overlooking Atlantic coast.', imageUrl: 'https://images.unsplash.com/photo-15806518672591-eb180b1a973f?auto=format&fit=crop&w=800&q=80' },
+
+    // RIO DE JANEIRO
+    { cityName: 'Rio de Janeiro', name: 'Christ the Redeemer & Corcovado Train', category: 'Sightseeing', cost: 30, durationMinutes: 180, description: 'Ride cog train through Tijuca rainforest to the feet of the giant statue.', imageUrl: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=800&q=80' },
+
+    // VENICE
+    { cityName: 'Venice', name: 'Grand Canal Gondola Ride & St. Mark’s Basilica', category: 'Sightseeing', cost: 60, durationMinutes: 90, description: 'Glide along historic canals under Rialto Bridge with Venetian gondolier.', imageUrl: 'https://images.unsplash.com/photo-1514890547357-a9ee288728e0?auto=format&fit=crop&w=800&q=80' },
+
+    // AMSTERDAM
+    { cityName: 'Amsterdam', name: 'Rijksmuseum & Van Gogh Museum Masterpieces', category: 'Culture', cost: 45, durationMinutes: 180, description: 'See Rembrandt’s Night Watch and Van Gogh’s Sunflowers with expert guide.', imageUrl: 'https://images.unsplash.com/photo-1512470876302-972faa2aa9a4?auto=format&fit=crop&w=800&q=80' },
+
+    // PRAGUE
+    { cityName: 'Prague', name: 'Prague Castle & St. Vitus Cathedral Walking Tour', category: 'Sightseeing', cost: 20, durationMinutes: 180, description: 'Explore the world’s largest ancient castle complex and Golden Lane.', imageUrl: 'https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=800&q=80' },
+
+    // REYKJAVIK
+    { cityName: 'Reykjavik', name: 'Blue Lagoon Volcanic Geothermal Spa Day', category: 'Nature', cost: 85, durationMinutes: 240, description: 'Soak in milky-blue geothermal waters surrounded by black lava fields.', imageUrl: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=800&q=80' },
+
+    // ISTANBUL
+    { cityName: 'Istanbul', name: 'Hagia Sophia & Blue Mosque Guided Culture Tour', category: 'Culture', cost: 35, durationMinutes: 150, description: 'Discover Byzantine mosaics, Ottoman domes, and Islamic calligraphy.', imageUrl: 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=800&q=80' },
+
+    // SANTORINI
+    { cityName: 'Santorini', name: 'Oia Sunset & Caldera Sailing Catamaran Cruise', category: 'Sightseeing', cost: 110, durationMinutes: 300, description: 'Sail past volcanic hot springs and watch Oia sunset from the Aegean Sea.', imageUrl: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=80' },
+
+    // VIENNA
+    { cityName: 'Vienna', name: 'Schönbrunn Palace Royal Rooms & Imperial Gardens', category: 'Culture', cost: 28, durationMinutes: 150, description: 'Tour Habsburg summer residence and Gloriette garden hilltop terrace.', imageUrl: 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?auto=format&fit=crop&w=800&q=80' },
+
+    // ATHENS
+    { cityName: 'Athens', name: 'Acropolis & Parthenon Ancient History Guided Tour', category: 'Culture', cost: 30, durationMinutes: 150, description: 'Walk up the sacred rock to Parthenon, Erechtheion, and Theater of Dionysus.', imageUrl: 'https://images.unsplash.com/photo-1555993539-1732b0258235?auto=format&fit=crop&w=800&q=80' },
+
+    // DUBROVNIK
+    { cityName: 'Dubrovnik', name: 'Old Town Medieval City Walls Walking Tour', category: 'Sightseeing', cost: 35, durationMinutes: 120, description: 'Walk atop 2-kilometer stone ramparts overlooking red terracotta roofs and sea.', imageUrl: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80' },
+
+    // JAIPUR & UDAIPUR & AGRA & MUMBAI
     { cityName: 'Jaipur', name: 'Amber Fort & Elephant Palace Tour', category: 'Sightseeing', cost: 20, durationMinutes: 180, description: 'Explore mirror halls and pink sandstone ramparts.', imageUrl: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?auto=format&fit=crop&w=800&q=80' },
     { cityName: 'Udaipur', name: 'Lake Pichola Sunset Boat Cruise', category: 'Sightseeing', cost: 25, durationMinutes: 120, description: 'Glide past Jag Mandir and Lake Palace at sunset.', imageUrl: 'https://images.unsplash.com/photo-1615836245337-f5b9b2303f1c?auto=format&fit=crop&w=800&q=80' },
     { cityName: 'Agra', name: 'Taj Mahal Sunrise Guided Tour', category: 'Sightseeing', cost: 35, durationMinutes: 180, description: 'Witness sunrise over the white marble mausoleum.', imageUrl: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=800&q=80' },
     { cityName: 'Mumbai', name: 'Gateway of India & Elephanta Caves Speedboat', category: 'Culture', cost: 30, durationMinutes: 240, description: 'Boat trip across Mumbai harbour to ancient rock-cut cave temples.', imageUrl: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=800&q=80' },
 
-    // Tokyo & Kyoto
-    { cityName: 'Tokyo', name: 'Shibuya Crossing & Harajuku Food Tour', category: 'Food & Drink', cost: 65, durationMinutes: 180, description: 'Taste street eats and explore Shibuya neon lights.', imageUrl: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=800&q=80' },
-    { cityName: 'Kyoto', name: 'Fushimi Inari Torii Gate Early Hike', category: 'Nature', cost: 0, durationMinutes: 150, description: 'Ascend Mount Inari through thousands of vermilion gates.', imageUrl: 'https://images.unsplash.com/photo-1478436127897-769e1b3f0f36?auto=format&fit=crop&w=800&q=80' },
+    // SINGAPORE
+    { cityName: 'Singapore', name: 'Gardens by the Bay Supertree Grove & Cloud Forest', category: 'Sightseeing', cost: 28, durationMinutes: 150, description: 'Marvel at futuristic 50-meter vertical gardens and indoor waterfall mist.', imageUrl: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=80' },
 
-    // Paris & Rome & London & Barcelona
-    { cityName: 'Paris', name: 'Louvre Museum Skip-the-Line Guided Tour', category: 'Culture', cost: 55, durationMinutes: 150, description: 'Priority tour seeing Mona Lisa and Venus de Milo.', imageUrl: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=80' },
-    { cityName: 'Rome', name: 'Colosseum Underground & Gladiators Arena', category: 'Sightseeing', cost: 80, durationMinutes: 180, description: 'Access subterranean staging tunnels and walk arena floor.', imageUrl: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80' },
-    { cityName: 'London', name: 'Tower of London & Crown Jewels Tour', category: 'Sightseeing', cost: 45, durationMinutes: 150, description: 'See the glittering Crown Jewels with Yeoman Warders.', imageUrl: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=800&q=80' },
-    { cityName: 'Barcelona', name: 'Sagrada Familia Priority Entry Tour', category: 'Culture', cost: 40, durationMinutes: 120, description: 'Marvel at Gaudí’s stained-glass forest columns.', imageUrl: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=800&q=80' },
+    // BALI
+    { cityName: 'Bali', name: 'Tegallalang Rice Terraces & Sacred Monkey Forest', category: 'Nature', cost: 15, durationMinutes: 240, description: 'Walk emerald rice paddies and meet macaque monkeys in Ubud jungle.', imageUrl: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80' },
 
-    // NYC & LA & Cairo & Dubai & Sydney
-    { cityName: 'New York City', name: 'Statue of Liberty & Ellis Island Ferry', category: 'Sightseeing', cost: 30, durationMinutes: 210, description: 'Climb Liberty island and explore American history.', imageUrl: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=800&q=80' },
-    { cityName: 'Los Angeles', name: 'Hollywood Sign & Griffith Observatory Hike', category: 'Adventure', cost: 25, durationMinutes: 180, description: 'Hike through Hollywood Hills for sweeping views.', imageUrl: 'https://images.unsplash.com/photo-1580655653885-65763b2597d0?auto=format&fit=crop&w=800&q=80' },
-    { cityName: 'Cairo', name: 'Giza Pyramids & Sphinx Camel Safari', category: 'Sightseeing', cost: 50, durationMinutes: 240, description: 'Ride camels across desert dunes with views of Great Pyramid.', imageUrl: 'https://images.unsplash.com/photo-1572252821128-44477d612e43?auto=format&fit=crop&w=800&q=80' },
-    { cityName: 'Dubai', name: 'Burj Khalifa Observation Deck & Fountain Show', category: 'Sightseeing', cost: 60, durationMinutes: 120, description: 'Stand on 124th floor skydeck followed by fountain show.', imageUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80' },
-    { cityName: 'Sydney', name: 'Sydney Opera House Guided Architectural Tour', category: 'Culture', cost: 35, durationMinutes: 90, description: 'Explore behind the scenes of Bennelong Point sails.', imageUrl: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80' },
+    // PHUKET
+    { cityName: 'Phuket', name: 'Phi Phi Islands Speedboat Snorkeling & Maya Bay', category: 'Adventure', cost: 70, durationMinutes: 480, description: 'Cruise limestone island lagons and snorkel crystal waters.', imageUrl: 'https://images.unsplash.com/photo-1589394815804-964ed0be2eb5?auto=format&fit=crop&w=800&q=80' },
+
+    // SEOUL
+    { cityName: 'Seoul', name: 'Gyeongbokgung Palace Royal Guard Hanbok Experience', category: 'Culture', cost: 15, durationMinutes: 180, description: 'Dress in traditional Hanbok attire for free entry to royal throne halls.', imageUrl: 'https://images.unsplash.com/photo-1538485399081-7191377e8241?auto=format&fit=crop&w=800&q=80' },
+
+    // HONG KONG
+    { cityName: 'Hong Kong', name: 'Victoria Peak Tram & Sky Terrace 428 Sunset', category: 'Sightseeing', cost: 20, durationMinutes: 120, description: 'Ride historic funicular railway for skyline views over Victoria Harbour.', imageUrl: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=800&q=80' },
+
+    // BANFF
+    { cityName: 'Banff', name: 'Lake Louise & Moraine Lake Canadian Rockies Tour', category: 'Nature', cost: 40, durationMinutes: 300, description: 'Photograph turquoise glacier waters surrounded by Ten Peaks.', imageUrl: 'https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=800&q=80' },
   ];
 
   const createdActivities = [];

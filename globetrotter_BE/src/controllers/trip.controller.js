@@ -34,6 +34,14 @@ export const fetchFullTrip = async (tripId) => {
   const stops = stopsRes.rows;
 
   for (const stop of stops) {
+    if (stop.city) {
+      const cityActivitiesRes = await db.query(
+        `SELECT * FROM "Activity" WHERE "cityId" = $1 ORDER BY "cost" ASC`,
+        [stop.city.id]
+      );
+      stop.city.activities = cityActivitiesRes.rows;
+    }
+
     const activitiesRes = await db.query(
       `SELECT sa.*, 
               row_to_json(a.*) as activity
