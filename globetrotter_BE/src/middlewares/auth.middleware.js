@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
 import { catchAsync } from '../utils/catchAsync.js';
-import { prisma } from '../config/db.js';
+import { db } from '../config/db.js';
 
 export const authenticate = catchAsync(async (req, res, next) => {
   let token;
@@ -17,7 +17,8 @@ export const authenticate = catchAsync(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET);
-    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    const { rows } = await db.query('SELECT * FROM "User" WHERE id = $1', [decoded.id]);
+    const user = rows[0];
 
     if (!user || !user.isActive) {
       throw new ApiError(401, 'User account no longer exists or is deactivated.');

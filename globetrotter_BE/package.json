@@ -1,22 +1,18 @@
 {
   "name": "globetrotter_BE",
   "version": "1.0.0",
-  "description": "Express PostgreSQL Prisma Railway hackathon backend",
+  "description": "Express PostgreSQL pg (node-postgres) Railway hackathon backend",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init",
-    "prisma:push": "prisma db push",
     "seed": "node scripts/seed.js",
     "db:schema:path": "echo database/schema.sql",
     "db:seed:path": "echo database/seed.sql"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
-    "@prisma/client": "^5.12.1",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.2.0",
     "cors": "^2.8.5",
@@ -31,11 +27,9 @@
     "nodemailer": "^6.9.13",
     "pdfkit": "^0.15.0",
     "pdfkit-table": "^0.1.99",
+    "pg": "^8.23.0",
     "socket.io": "^4.7.5",
     "swagger-ui-express": "^5.0.0",
     "zod": "^3.22.4"
-  },
-  "devDependencies": {
-    "prisma": "^5.12.1"
   }
 }

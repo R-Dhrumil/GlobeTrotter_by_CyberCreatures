@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { prisma } from '../config/db.js';
+import { db } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
@@ -24,23 +24,19 @@ export const register = catchAsync(async (req, res) => {
   }
 
   const cleanEmail = email.toLowerCase().trim();
-  const existingUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
-  if (existingUser) {
+  const existingUserRes = await db.query('SELECT * FROM "User" WHERE email = $1', [cleanEmail]);
+  if (existingUserRes.rows.length > 0) {
     throw new ApiError(409, 'User with this email already exists');
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
-    data: {
-      name: name.trim(),
-      email: cleanEmail,
-      password: hashedPassword,
-      role: 'USER',
-      photoUrl: photoUrl || '',
-      languagePref: languagePref || 'en',
-      status: 'ACTIVE',
-    },
-  });
+  const insertRes = await db.query(
+    `INSERT INTO "User" (id, name, email, password, role, "photoUrl", "languagePref", status, "updatedAt")
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, NOW())
+     RETURNING *`,
+    [name.trim(), cleanEmail, hashedPassword, 'USER', photoUrl || '', languagePref || 'en', 'ACTIVE']
+  );
+  const user = insertRes.rows[0];
 
   const token = generateToken(user.id);
   const { password: _, ...safeUser } = user;
@@ -59,7 +55,9 @@ export const login = catchAsync(async (req, res) => {
   }
 
   const cleanEmail = email.toLowerCase().trim();
-  const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+  const userRes = await db.query('SELECT * FROM "User" WHERE email = $1', [cleanEmail]);
+  const user = userRes.rows[0];
+
   if (!user || !(await bcrypt.compare(password, user.password))) {
     throw new ApiError(401, 'Invalid email or password');
   }
@@ -78,21 +76,11 @@ export const login = catchAsync(async (req, res) => {
  * Get current authenticated user profile
  */
 export const getMe = catchAsync(async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      photoUrl: true,
-      languagePref: true,
-      status: true,
-      department: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
+  const userRes = await db.query(
+    'SELECT id, name, email, role, "photoUrl", "languagePref", status, department, "createdAt", "updatedAt" FROM "User" WHERE id = $1',
+    [req.user.id]
+  );
+  const user = userRes.rows[0];
 
   return ApiResponse.send(res, 200, { user }, 'User profile retrieved');
 });
@@ -103,29 +91,38 @@ export const getMe = catchAsync(async (req, res) => {
 export const updateProfile = catchAsync(async (req, res) => {
   const { name, photoUrl, languagePref, department } = req.body;
 
-  const updated = await prisma.user.update({
-    where: { id: req.user.id },
-    data: {
-      ...(name && { name: name.trim() }),
-      ...(photoUrl !== undefined && { photoUrl }),
-      ...(languagePref && { languagePref }),
-      ...(department && { department }),
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      photoUrl: true,
-      languagePref: true,
-      status: true,
-      department: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
+  const fields = [];
+  const values = [];
+  let paramIdx = 1;
 
-  return ApiResponse.send(res, 200, { user: updated }, 'Profile updated successfully');
+  if (name) {
+    fields.push(`name = $${paramIdx++}`);
+    values.push(name.trim());
+  }
+  if (photoUrl !== undefined) {
+    fields.push(`"photoUrl" = $${paramIdx++}`);
+    values.push(photoUrl);
+  }
+  if (languagePref) {
+    fields.push(`"languagePref" = $${paramIdx++}`);
+    values.push(languagePref);
+  }
+  if (department) {
+    fields.push(`department = $${paramIdx++}`);
+    values.push(department);
+  }
+
+  if (fields.length === 0) {
+    throw new ApiError(400, 'No fields provided to update');
+  }
+
+  fields.push(`"updatedAt" = NOW()`);
+  values.push(req.user.id);
+
+  const queryText = `UPDATE "User" SET ${fields.join(', ')} WHERE id = $${paramIdx} RETURNING id, name, email, role, "photoUrl", "languagePref", status, department, "createdAt", "updatedAt"`;
+  const updateRes = await db.query(queryText, values);
+
+  return ApiResponse.send(res, 200, { user: updateRes.rows[0] }, 'Profile updated successfully');
 });
 
 /**
@@ -138,17 +135,15 @@ export const changePassword = catchAsync(async (req, res) => {
     throw new ApiError(400, 'Current and new password are required');
   }
 
-  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  const userRes = await db.query('SELECT * FROM "User" WHERE id = $1', [req.user.id]);
+  const user = userRes.rows[0];
   const isMatch = await bcrypt.compare(currentPassword, user.password);
   if (!isMatch) {
     throw new ApiError(400, 'Incorrect current password');
   }
 
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({
-    where: { id: req.user.id },
-    data: { password: hashedPassword },
-  });
+  await db.query('UPDATE "User" SET password = $1, "updatedAt" = NOW() WHERE id = $2', [hashedPassword, req.user.id]);
 
   return ApiResponse.send(res, 200, null, 'Password updated successfully');
 });
@@ -163,23 +158,20 @@ export const forgotPassword = catchAsync(async (req, res) => {
   }
 
   const cleanEmail = email.toLowerCase().trim();
-  const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+  const userRes = await db.query('SELECT * FROM "User" WHERE email = $1', [cleanEmail]);
+  const user = userRes.rows[0];
   if (!user) {
-    // For security, respond standard message even if user doesn't exist
     return ApiResponse.send(res, 200, { email: cleanEmail }, 'If an account exists, a reset code has been sent.');
   }
 
   const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-  await prisma.otp.deleteMany({ where: { email: cleanEmail } });
-  await prisma.otp.create({
-    data: {
-      email: cleanEmail,
-      otp: otpCode,
-      expiresAt,
-    },
-  });
+  await db.query('DELETE FROM "Otp" WHERE email = $1', [cleanEmail]);
+  await db.query(
+    'INSERT INTO "Otp" (id, email, otp, "expiresAt") VALUES (gen_random_uuid(), $1, $2, $3)',
+    [cleanEmail, otpCode, expiresAt]
+  );
 
   console.log(`\n🔑 [GLOBETROTTER PASSWORD RESET OTP]: ${otpCode} for ${cleanEmail}\n`);
 
@@ -213,25 +205,18 @@ export const resetPassword = catchAsync(async (req, res) => {
   }
 
   const cleanEmail = email.toLowerCase().trim();
-  const validOtp = await prisma.otp.findFirst({
-    where: {
-      email: cleanEmail,
-      otp: otp.trim(),
-      expiresAt: { gte: new Date() },
-    },
-  });
+  const otpRes = await db.query(
+    'SELECT * FROM "Otp" WHERE email = $1 AND otp = $2 AND "expiresAt" >= NOW()',
+    [cleanEmail, otp.trim()]
+  );
 
-  if (!validOtp) {
+  if (otpRes.rows.length === 0) {
     throw new ApiError(400, 'Invalid or expired reset code');
   }
 
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({
-    where: { email: cleanEmail },
-    data: { password: hashedPassword },
-  });
-
-  await prisma.otp.deleteMany({ where: { email: cleanEmail } });
+  await db.query('UPDATE "User" SET password = $1, "updatedAt" = NOW() WHERE email = $2', [hashedPassword, cleanEmail]);
+  await db.query('DELETE FROM "Otp" WHERE email = $1', [cleanEmail]);
 
   return ApiResponse.send(res, 200, null, 'Password has been reset successfully. You can now login.');
 });
