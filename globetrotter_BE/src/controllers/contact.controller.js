@@ -25,7 +25,7 @@ export const submitContact = catchAsync(async (req, res) => {
   const contactMessage = insertRes.rows[0];
 
   try {
-    const smtpRes = await db.query('SELECT * FROM "SiteSetting" WHERE group = $1', ['SMTP']);
+    const smtpRes = await db.query('SELECT * FROM "SiteSetting" WHERE "group" = $1', ['SMTP']);
     const fromEmail = smtpRes.rows.find((s) => s.key === 'smtp_from_email')?.value || 'concierge@globetrotter.com';
 
     await sendEmail({

@@ -436,7 +436,7 @@ export const createTestTransaction = catchAsync(async (req, res) => {
 export const getSettings = catchAsync(async (req, res) => {
   const { group } = req.query;
 
-  const queryText = group ? 'SELECT * FROM "SiteSetting" WHERE group = $1' : 'SELECT * FROM "SiteSetting"';
+  const queryText = group ? 'SELECT * FROM "SiteSetting" WHERE "group" = $1' : 'SELECT * FROM "SiteSetting"';
   const params = group ? [group] : [];
 
   const settingsRes = await db.query(queryText, params);
@@ -460,7 +460,7 @@ export const updateSettings = catchAsync(async (req, res) => {
   const updatedEntries = [];
   for (const [key, value] of Object.entries(settings)) {
     const res = await db.query(
-      `INSERT INTO "SiteSetting" (id, key, value, group, "updatedAt")
+      `INSERT INTO "SiteSetting" (id, key, value, "group", "updatedAt")
        VALUES (gen_random_uuid(), $1, $2, $3, NOW())
        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, "updatedAt" = NOW()
        RETURNING *`,

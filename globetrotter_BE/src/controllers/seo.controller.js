@@ -7,7 +7,7 @@ import { catchAsync } from '../utils/catchAsync.js';
  * Get all SEO settings (Public endpoint consumed by React Helmet Async)
  */
 export const getSeoSettings = catchAsync(async (req, res) => {
-  const seoRes = await db.query('SELECT * FROM "SiteSetting" WHERE group = $1', ['SEO']);
+  const seoRes = await db.query('SELECT * FROM "SiteSetting" WHERE "group" = $1', ['SEO']);
   const seoSettings = seoRes.rows;
 
   const seoMap = {
@@ -82,7 +82,7 @@ export const updateSeoSettings = catchAsync(async (req, res) => {
   for (const item of updates) {
     if (item.value !== undefined) {
       await db.query(
-        `INSERT INTO "SiteSetting" (id, key, value, group, "updatedAt")
+        `INSERT INTO "SiteSetting" (id, key, value, "group", "updatedAt")
          VALUES (gen_random_uuid(), $1, $2, 'SEO', NOW())
          ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, "updatedAt" = NOW()`,
         [item.key, String(item.value)]
