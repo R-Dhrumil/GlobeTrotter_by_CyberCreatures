@@ -10,10 +10,14 @@ import {
   Sparkles,
   ArrowRight,
   TrendingUp,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const AdminPayments = () => {
+  const [showStripeSecret, setShowStripeSecret] = useState(false);
+  const [showRazorpaySecret, setShowRazorpaySecret] = useState(false);
   const [paymentSettings, setPaymentSettings] = useState({
     payment_gateway: 'STRIPE',
     payment_currency: 'USD',
@@ -207,15 +211,25 @@ export const AdminPayments = () => {
                   <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
                     Stripe Secret Key
                   </label>
-                  <input
-                    type="password"
-                    placeholder="sk_test_..."
-                    value={paymentSettings.payment_stripe_secret_key}
-                    onChange={(e) =>
-                      setPaymentSettings({ ...paymentSettings, payment_stripe_secret_key: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs font-mono"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showStripeSecret ? 'text' : 'password'}
+                      placeholder="sk_test_..."
+                      value={paymentSettings.payment_stripe_secret_key}
+                      onChange={(e) =>
+                        setPaymentSettings({ ...paymentSettings, payment_stripe_secret_key: e.target.value })
+                      }
+                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-stone-300 text-xs font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowStripeSecret(!showStripeSecret)}
+                      className="absolute right-3.5 top-2.5 text-stone-400 hover:text-stone-600 focus:outline-none transition"
+                      title={showStripeSecret ? 'Hide Secret Key' : 'Show Secret Key'}
+                    >
+                      {showStripeSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </>
             ) : (
@@ -238,15 +252,25 @@ export const AdminPayments = () => {
                   <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
                     Razorpay Key Secret
                   </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••••••"
-                    value={paymentSettings.payment_razorpay_key_secret}
-                    onChange={(e) =>
-                      setPaymentSettings({ ...paymentSettings, payment_razorpay_key_secret: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs font-mono"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showRazorpaySecret ? 'text' : 'password'}
+                      placeholder="••••••••••••"
+                      value={paymentSettings.payment_razorpay_key_secret}
+                      onChange={(e) =>
+                        setPaymentSettings({ ...paymentSettings, payment_razorpay_key_secret: e.target.value })
+                      }
+                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-stone-300 text-xs font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRazorpaySecret(!showRazorpaySecret)}
+                      className="absolute right-3.5 top-2.5 text-stone-400 hover:text-stone-600 focus:outline-none transition"
+                      title={showRazorpaySecret ? 'Hide Key Secret' : 'Show Key Secret'}
+                    >
+                      {showRazorpaySecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </>
             )}
