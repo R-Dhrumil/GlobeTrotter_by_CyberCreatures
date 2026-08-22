@@ -30,6 +30,7 @@ import {
   Info,
   Navigation,
   ShieldAlert,
+  Loader2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -40,6 +41,7 @@ export const ItineraryBuilderPage = () => {
 
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reorderingStopId, setReorderingStopId] = useState(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('stops'); // 'stops', 'schedule', 'timeline'
 
@@ -87,7 +89,8 @@ export const ItineraryBuilderPage = () => {
     fetchCitiesCatalog();
   }, [id]);
 
-  const fetchTripDetails = async () => {
+  const fetchTripDetails = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await tripAPI.getById(id);
       if (res.data?.trip) {
@@ -103,7 +106,7 @@ export const ItineraryBuilderPage = () => {
     } catch (err) {
       setError(err.message || 'Failed to load trip');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -160,21 +163,32 @@ export const ItineraryBuilderPage = () => {
     });
   };
 
-  // Reorder Stops
+  // Reorder Stops with Optimistic UI Update and Loader
   const handleMoveStop = async (currentIndex, direction) => {
     const targetIndex = currentIndex + direction;
     if (targetIndex < 0 || targetIndex >= trip.stops.length) return;
 
+    const movingStop = trip.stops[currentIndex];
+    setReorderingStopId(movingStop.id);
+
+    const originalStops = [...trip.stops];
     const reordered = [...trip.stops];
     const [moved] = reordered.splice(currentIndex, 1);
     reordered.splice(targetIndex, 0, moved);
 
+    // 1. Optimistic Update: Immediately reflect new stop order in UI
+    setTrip((prev) => ({ ...prev, stops: reordered }));
+
     const stopIds = reordered.map((s) => s.id);
     try {
       await tripAPI.reorderStops(trip.id, stopIds);
-      fetchTripDetails();
+      await fetchTripDetails(true);
     } catch (err) {
+      // Rollback on failure
+      setTrip((prev) => ({ ...prev, stops: originalStops }));
       showError(err.message || 'Failed to reorder stops');
+    } finally {
+      setReorderingStopId(null);
     }
   };
 
@@ -470,25 +484,40 @@ export const ItineraryBuilderPage = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent"></div>
 
                 <div className="absolute top-4 right-4 flex items-center gap-2">
+                  {reorderingStopId === stop.id && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-stone-950 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-md animate-pulse">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Updating Route...
+                    </span>
+                  )}
                   <button
                     onClick={() => handleMoveStop(idx, -1)}
-                    disabled={idx === 0}
-                    className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/80 disabled:opacity-30 transition"
+                    disabled={idx === 0 || reorderingStopId !== null}
+                    className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/80 disabled:opacity-30 transition flex items-center justify-center min-w-[28px] min-h-[28px]"
                     title="Move Stop Up"
                   >
-                    <ArrowUp className="w-4 h-4" />
+                    {reorderingStopId === stop.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                    ) : (
+                      <ArrowUp className="w-4 h-4" />
+                    )}
                   </button>
                   <button
                     onClick={() => handleMoveStop(idx, 1)}
-                    disabled={idx === trip.stops.length - 1}
-                    className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/80 disabled:opacity-30 transition"
+                    disabled={idx === trip.stops.length - 1 || reorderingStopId !== null}
+                    className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/80 disabled:opacity-30 transition flex items-center justify-center min-w-[28px] min-h-[28px]"
                     title="Move Stop Down"
                   >
-                    <ArrowDown className="w-4 h-4" />
+                    {reorderingStopId === stop.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                    ) : (
+                      <ArrowDown className="w-4 h-4" />
+                    )}
                   </button>
                   <button
                     onClick={() => handleDeleteStop(stop.id, stop.city?.name)}
-                    className="p-1.5 rounded-lg bg-rose-600/80 hover:bg-rose-700 text-white transition"
+                    disabled={reorderingStopId !== null}
+                    className="p-1.5 rounded-lg bg-rose-600/80 hover:bg-rose-700 text-white transition disabled:opacity-30"
                     title="Delete Stop"
                   >
                     <Trash2 className="w-4 h-4" />
