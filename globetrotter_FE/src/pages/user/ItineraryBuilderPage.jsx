@@ -22,6 +22,11 @@ import {
   ChevronRight,
   ExternalLink,
   Tag,
+  BookOpen,
+  Printer,
+  Info,
+  Navigation,
+  ShieldAlert,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -333,6 +338,17 @@ export const ItineraryBuilderPage = () => {
           >
             Vertical Route Timeline
           </button>
+          <button
+            onClick={() => setActiveTab('guide')}
+            className={`pb-2 text-sm font-bold transition border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'guide'
+                ? 'border-amber-600 text-amber-700'
+                : 'border-transparent text-stone-500 hover:text-stone-900'
+            }`}
+          >
+            <BookOpen className="w-4 h-4 text-amber-600" />
+            <span>Full Travel Guide</span>
+          </button>
         </div>
 
         <button
@@ -532,7 +548,7 @@ export const ItineraryBuilderPage = () => {
             </div>
           ))}
         </div>
-      ) : (
+      ) : activeTab === 'timeline' ? (
         /* Vertical Route Timeline */
         <div className="relative border-l-2 border-amber-500/40 ml-4 md:ml-8 pl-6 md:pl-8 space-y-10 py-4">
           {trip.stops.map((stop, idx) => (
@@ -558,6 +574,188 @@ export const ItineraryBuilderPage = () => {
               </div>
             </div>
           ))}
+        </div>
+      ) : (
+        /* Full Travel Guide View */
+        <div className="space-y-8 print:space-y-6">
+          {/* Guide Toolbar */}
+          <div className="bg-gradient-to-r from-amber-900 via-stone-900 to-amber-950 p-6 md:p-8 rounded-3xl text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 print:hidden">
+            <div>
+              <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-widest mb-1">
+                <Sparkles className="w-4 h-4" />
+                <span>GlobeTrotter Expedition Guide</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-serif font-bold">Complete Traveler Guide & Itinerary</h2>
+              <p className="text-stone-300 text-xs mt-1 max-w-xl">
+                Comprehensive destination overviews, daily schedules, famous experiences, and local field tips curated for your journey.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={() => window.print()}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs shadow-md transition flex items-center gap-2"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print / Export PDF Guide</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Expedition Summary Highlights */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-sm text-center">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block mb-1">Destinations</span>
+              <span className="text-2xl font-bold font-serif text-stone-900">{trip.stops?.length || 0} Cities</span>
+            </div>
+            <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-sm text-center">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block mb-1">Experiences</span>
+              <span className="text-2xl font-bold font-serif text-amber-600">
+                {trip.stops?.reduce((acc, s) => acc + (s.activities?.length || 0), 0) || 0} Curated
+              </span>
+            </div>
+            <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-sm text-center">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block mb-1">Est. Duration</span>
+              <span className="text-2xl font-bold font-serif text-stone-900">
+                {trip.startDate && trip.endDate
+                  ? `${Math.max(1, Math.ceil((new Date(trip.endDate) - new Date(trip.startDate)) / (1000 * 60 * 60 * 24)))} Days`
+                  : 'Flexible'}
+              </span>
+            </div>
+            <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-sm text-center">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block mb-1">Visibility</span>
+              <span className="text-sm font-bold uppercase text-emerald-700 block mt-1">
+                {trip.isPublic ? '🌐 Public Shared' : '🔒 Private'}
+              </span>
+            </div>
+          </div>
+
+          {/* City Destination Field Guides */}
+          <div className="space-y-8">
+            <h3 className="text-xl font-bold font-serif text-stone-900 border-b border-stone-200 pb-3 flex items-center gap-2">
+              <Navigation className="w-5 h-5 text-amber-600" />
+              <span>Destination Field Guides & Iconic Experiences</span>
+            </h3>
+
+            {trip.stops?.map((stop, index) => (
+              <div
+                key={stop.id}
+                className="bg-white rounded-3xl border border-stone-200/90 shadow-sm overflow-hidden space-y-6 p-6 md:p-8"
+              >
+                {/* City Header */}
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-stone-100 pb-6">
+                  <div className="flex items-center gap-4">
+                    {stop.city?.imageUrl && (
+                      <img
+                        src={stop.city.imageUrl}
+                        alt={stop.city.name}
+                        className="w-20 h-20 rounded-2xl object-cover shadow-sm shrink-0"
+                      />
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-wider">
+                          Stop #{index + 1}
+                        </span>
+                        <span className="text-xs font-semibold text-stone-500">{stop.city?.region} Region</span>
+                      </div>
+                      <h4 className="text-2xl font-serif font-bold text-stone-900 mt-1">
+                        {stop.city?.name}, {stop.city?.country}
+                      </h4>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="px-3 py-1.5 rounded-xl bg-stone-100 font-bold text-stone-700">
+                      Cost Rating: {'$'.repeat(stop.city?.costIndex || 3)}
+                    </span>
+                    <span className="px-3 py-1.5 rounded-xl bg-amber-50 font-bold text-amber-800">
+                      Popularity: {stop.city?.popularityScore || 90}/100
+                    </span>
+                  </div>
+                </div>
+
+                {/* City Overview */}
+                <div>
+                  <h5 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-2">About {stop.city?.name}</h5>
+                  <p className="text-sm text-stone-700 leading-relaxed font-serif">{stop.city?.description}</p>
+                </div>
+
+                {/* Scheduled Activities & Famous Experiences */}
+                <div>
+                  <h5 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-3">
+                    Scheduled Famous Activities ({stop.activities?.length || 0})
+                  </h5>
+
+                  {stop.activities?.length === 0 ? (
+                    <p className="text-xs text-stone-400 italic bg-stone-50 p-4 rounded-xl">
+                      No activities scheduled yet for {stop.city?.name}. Switch to the "Destination Stops" tab to add experiences!
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {stop.activities.map((sa) => (
+                        <div
+                          key={sa.id}
+                          className="p-4 rounded-2xl bg-stone-50 border border-stone-200/60 flex items-start gap-3"
+                        >
+                          {sa.activity?.imageUrl && (
+                            <img
+                              src={sa.activity.imageUrl}
+                              alt={sa.activity.name}
+                              className="w-16 h-16 rounded-xl object-cover shrink-0"
+                            />
+                          )}
+                          <div className="space-y-1 min-w-0">
+                            <span className="px-2 py-0.5 rounded-md bg-stone-200/70 text-stone-800 text-[9px] font-bold uppercase tracking-wider">
+                              {sa.activity?.category || 'Sightseeing'}
+                            </span>
+                            <h6 className="text-xs font-bold text-stone-900 font-serif leading-tight">
+                              {sa.activity?.name}
+                            </h6>
+                            <div className="flex items-center gap-2 text-[11px] text-stone-500">
+                              <span className="font-semibold text-amber-700">{sa.scheduledTime || 'Flexible Time'}</span>
+                              <span>•</span>
+                              <span className="font-semibold text-emerald-700">
+                                {sa.activity?.cost === 0 ? 'Free' : `$${sa.activity?.cost}`}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 line-clamp-2">{sa.activity?.description}</p>
+                            {sa.notes && (
+                              <p className="text-[11px] text-amber-800 italic bg-amber-50 px-2 py-1 rounded-lg mt-1">
+                                Note: {sa.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Local Field Advice & Tips */}
+                <div className="bg-stone-50 p-5 rounded-2xl border border-stone-200/60 space-y-3 text-xs">
+                  <h5 className="font-bold text-stone-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <Info className="w-4 h-4 text-amber-600" />
+                    <span>Traveler Field Guide Tips for {stop.city?.name}</span>
+                  </h5>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-stone-600">
+                    <div className="p-3 bg-white rounded-xl border border-stone-200/50">
+                      <span className="font-bold text-stone-800 block mb-1">☀️ Packing & Weather</span>
+                      <span>Comfortable walking footwear recommended. Keep a compact rain jacket and power bank handy.</span>
+                    </div>
+                    <div className="p-3 bg-white rounded-xl border border-stone-200/50">
+                      <span className="font-bold text-stone-800 block mb-1">🚕 Local Transit</span>
+                      <span>Utilize local metro passes and registered rideshares for convenient inner-city transit.</span>
+                    </div>
+                    <div className="p-3 bg-white rounded-xl border border-stone-200/50">
+                      <span className="font-bold text-stone-800 block mb-1">💳 Currency & Etiquette</span>
+                      <span>Carry local currency for street food stalls; contactless cards accepted at major venues.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
