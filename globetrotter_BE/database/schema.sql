@@ -95,6 +95,8 @@ CREATE TABLE "City" (
     "region" VARCHAR(100) DEFAULT 'Global',
     "costIndex" INTEGER DEFAULT 3 CHECK ("costIndex" BETWEEN 1 AND 5),
     "popularityScore" INTEGER DEFAULT 80 CHECK ("popularityScore" BETWEEN 1 AND 100),
+    "lat" DOUBLE PRECISION DEFAULT 0.0,
+    "lng" DOUBLE PRECISION DEFAULT 0.0,
     "imageUrl" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

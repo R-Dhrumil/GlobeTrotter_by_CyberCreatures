@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { catalogAPI, tripAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
+import { InteractiveWorldMap } from '../../components/common/InteractiveWorldMap';
 import {
   Compass,
   Search,
@@ -14,6 +15,8 @@ import {
   ArrowUpDown,
   Tag,
   CheckCircle2,
+  Globe,
+  Grid,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -28,6 +31,7 @@ export const CitySearchPage = () => {
   const [region, setRegion] = useState('ALL');
   const [costIndex, setCostIndex] = useState('');
   const [sortBy, setSortBy] = useState('popularity');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
 
   // Add to trip modal
   const [addToTripModalOpen, setAddToTripModalOpen] = useState(false);
@@ -152,6 +156,28 @@ export const CitySearchPage = () => {
           </div>
 
           <div className="flex items-center gap-4 text-xs font-semibold text-stone-600">
+            {/* Grid vs Map Toggle */}
+            <div className="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  viewMode === 'grid' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-900'
+                }`}
+              >
+                <Grid className="w-3.5 h-3.5" />
+                <span>Grid View</span>
+              </button>
+              <button
+                onClick={() => setViewMode('map')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  viewMode === 'map' ? 'bg-amber-600 text-white shadow-sm' : 'text-stone-500 hover:text-stone-900'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>World Map</span>
+              </button>
+            </div>
+
             <div className="flex items-center gap-2">
               <ArrowUpDown className="w-3.5 h-3.5 text-stone-400" />
               <span>Sort:</span>
@@ -170,9 +196,23 @@ export const CitySearchPage = () => {
         </div>
       </div>
 
-      {/* Catalog Grid */}
+      {/* Catalog Display */}
       {loading ? (
         <LoadingSpinner text="Searching master destinations..." />
+      ) : viewMode === 'map' ? (
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-2xl border border-stone-200 text-xs text-stone-600 flex items-center justify-between">
+            <span>Click any marker pin on the map to view destination highlights and add it to your trip!</span>
+            <span className="font-bold text-amber-700">{cities.length} Cities Mapped Worldwide</span>
+          </div>
+
+          <InteractiveWorldMap
+            cities={cities}
+            onSelectCityForStop={(city) => handleOpenAddToTrip(city)}
+            height="600px"
+            showRouteLines={false}
+          />
+        </div>
       ) : cities.length === 0 ? (
         <div className="text-center py-16 bg-white/60 rounded-3xl border border-stone-200">
           <p className="text-stone-500 font-medium">No cities match your search filters.</p>
