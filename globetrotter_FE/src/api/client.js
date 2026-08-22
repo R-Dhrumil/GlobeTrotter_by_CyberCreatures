@@ -82,6 +82,7 @@ export const catalogAPI = {
   getFeatured: () => api.get('/catalog/featured'),
   getGallery: (params) => api.get('/catalog/gallery', { params }),
   getPublicTrips: (params) => api.get('/catalog/public-trips', { params }),
+  getCurrencies: () => api.get('/catalog/currencies'),
 };
 
 export const contactAPI = {

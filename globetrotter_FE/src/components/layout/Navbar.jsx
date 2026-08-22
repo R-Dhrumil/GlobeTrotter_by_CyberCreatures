@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { CurrencySelector } from '../common/CurrencySelector';
 import logo from '../../assets/logo.png';
 import {
   Compass,
@@ -86,6 +87,8 @@ export const Navbar = () => {
 
           {/* Right Action Bar */}
           <div className="hidden md:flex items-center gap-4">
+            <CurrencySelector />
+
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 {/* User Portal Link */}
@@ -191,8 +194,9 @@ export const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Hamburger Button */}
+          {/* Mobile Hamburger & Currency Selector */}
           <div className="flex md:hidden items-center gap-2">
+            <CurrencySelector compact />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-xl text-stone-600 hover:text-stone-900 hover:bg-stone-100"

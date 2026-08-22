@@ -34,6 +34,7 @@ import { AdminSmtp } from './pages/admin/AdminSmtp';
 import { AdminPayments } from './pages/admin/AdminPayments';
 import { AdminSeo } from './pages/admin/AdminSeo';
 import { AdminMessages } from './pages/admin/AdminMessages';
+import { AdminSettings } from './pages/admin/AdminSettings';
 
 // Public & User Main Layout Wrapper
 const MainLayout = () => {
@@ -147,6 +148,7 @@ export const App = () => {
         <Route path="payments" element={<AdminPayments />} />
         <Route path="seo" element={<AdminSeo />} />
         <Route path="messages" element={<AdminMessages />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
 
       {/* Catch-all redirect */}

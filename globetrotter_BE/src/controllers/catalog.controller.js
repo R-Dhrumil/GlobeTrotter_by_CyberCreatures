@@ -279,3 +279,47 @@ export const getPublicTrips = catchAsync(async (req, res) => {
 
   return ApiResponse.send(res, 200, { trips: tripsRes.rows }, 'Public trips retrieved');
 });
+
+const DEFAULT_CURRENCIES = [
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹', ratePerInr: 1.0, isBase: true, enabled: true },
+  { code: 'USD', name: 'US Dollar', symbol: '$', ratePerInr: 0.012, isBase: false, enabled: true },
+  { code: 'EUR', name: 'Euro', symbol: '€', ratePerInr: 0.011, isBase: false, enabled: true },
+  { code: 'GBP', name: 'British Pound', symbol: '£', ratePerInr: 0.0095, isBase: false, enabled: true },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'AED', ratePerInr: 0.044, isBase: false, enabled: true },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', ratePerInr: 1.82, isBase: false, enabled: true },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', ratePerInr: 0.018, isBase: false, enabled: true },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', ratePerInr: 0.016, isBase: false, enabled: true },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$', ratePerInr: 0.016, isBase: false, enabled: true },
+  { code: 'THB', name: 'Thai Baht', symbol: '฿', ratePerInr: 0.42, isBase: false, enabled: true },
+];
+
+/**
+ * Get active currency settings & exchange rates
+ */
+export const getCurrencies = catchAsync(async (req, res) => {
+  const resCurrency = await db.query('SELECT * FROM "SiteSetting" WHERE "group" = $1', ['CURRENCY']);
+  let baseCurrency = 'INR';
+  let currencies = DEFAULT_CURRENCIES;
+
+  resCurrency.rows.forEach((s) => {
+    if (s.key === 'currency_base') baseCurrency = s.value;
+    if (s.key === 'currency_rates') {
+      try {
+        const parsed = JSON.parse(s.value);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          currencies = parsed;
+        }
+      } catch (e) {
+        // Fallback to default list
+      }
+    }
+  });
+
+  return ApiResponse.send(
+    res,
+    200,
+    { baseCurrency, currencies, enabledCurrencies: currencies.filter((c) => c.enabled !== false) },
+    'Currencies retrieved successfully'
+  );
+});
+

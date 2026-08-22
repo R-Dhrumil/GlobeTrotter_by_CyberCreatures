@@ -16,6 +16,7 @@ import {
   X,
   ExternalLink,
   Shield,
+  Coins,
 } from 'lucide-react';
 
 export const AdminLayout = () => {
@@ -28,6 +29,7 @@ export const AdminLayout = () => {
     { name: 'Analytics Overview', path: '/admin', icon: LayoutDashboard, exact: true },
     { name: 'User Management', path: '/admin/users', icon: Users },
     { name: 'Content Catalog', path: '/admin/content', icon: Database },
+    { name: 'Currency & Settings', path: '/admin/settings', icon: Coins },
     { name: 'SMTP Email Config', path: '/admin/smtp', icon: Mail },
     { name: 'Payments & Revenue', path: '/admin/payments', icon: CreditCard },
     { name: 'SEO & Meta Tags', path: '/admin/seo', icon: Search },
