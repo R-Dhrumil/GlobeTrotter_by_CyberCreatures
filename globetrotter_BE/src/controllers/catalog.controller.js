@@ -314,3 +314,109 @@ export const getPublicTrips = catchAsync(async (req, res) => {
 
   return ApiResponse.send(res, 200, { trips: tripsRes.rows }, 'Public trips retrieved');
 });
+
+/**
+ * Toggle Like on Activity or Trip
+ */
+export const toggleLike = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+  const { itemId, itemType } = req.body;
+
+  const check = await db.query(
+    'SELECT * FROM "LikedItem" WHERE "userId" = $1 AND "itemId" = $2 AND "itemType" = $3',
+    [userId, itemId, itemType]
+  );
+
+  let isLiked = false;
+  if (check.rows.length > 0) {
+    await db.query(
+      'DELETE FROM "LikedItem" WHERE "userId" = $1 AND "itemId" = $2 AND "itemType" = $3',
+      [userId, itemId, itemType]
+    );
+    isLiked = false;
+  } else {
+    await db.query(
+      `INSERT INTO "LikedItem" (id, "userId", "itemId", "itemType", "createdAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, NOW())`,
+      [userId, itemId, itemType]
+    );
+    isLiked = true;
+  }
+
+  return ApiResponse.send(res, 200, { isLiked }, isLiked ? 'Item liked' : 'Item unliked');
+});
+
+/**
+ * Toggle Save Trip
+ */
+export const toggleSaveTrip = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+  const { tripId } = req.body;
+
+  const check = await db.query(
+    'SELECT * FROM "SavedTrip" WHERE "userId" = $1 AND "tripId" = $2',
+    [userId, tripId]
+  );
+
+  let isSaved = false;
+  if (check.rows.length > 0) {
+    await db.query(
+      'DELETE FROM "SavedTrip" WHERE "userId" = $1 AND "tripId" = $2',
+      [userId, tripId]
+    );
+    isSaved = false;
+  } else {
+    await db.query(
+      `INSERT INTO "SavedTrip" (id, "userId", "tripId", "createdAt")
+       VALUES (gen_random_uuid(), $1, $2, NOW())`,
+      [userId, tripId]
+    );
+    isSaved = true;
+  }
+
+  return ApiResponse.send(res, 200, { isSaved }, isSaved ? 'Trip saved' : 'Trip unsaved');
+});
+
+const DEFAULT_CURRENCIES = [
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹', ratePerInr: 1.0, isBase: true, enabled: true },
+  { code: 'USD', name: 'US Dollar', symbol: '$', ratePerInr: 0.012, isBase: false, enabled: true },
+  { code: 'EUR', name: 'Euro', symbol: '€', ratePerInr: 0.011, isBase: false, enabled: true },
+  { code: 'GBP', name: 'British Pound', symbol: '£', ratePerInr: 0.0095, isBase: false, enabled: true },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'AED', ratePerInr: 0.044, isBase: false, enabled: true },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', ratePerInr: 1.82, isBase: false, enabled: true },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', ratePerInr: 0.018, isBase: false, enabled: true },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', ratePerInr: 0.016, isBase: false, enabled: true },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$', ratePerInr: 0.016, isBase: false, enabled: true },
+  { code: 'THB', name: 'Thai Baht', symbol: '฿', ratePerInr: 0.42, isBase: false, enabled: true },
+];
+
+/**
+ * Get active currency settings & exchange rates
+ */
+export const getCurrencies = catchAsync(async (req, res) => {
+  const resCurrency = await db.query('SELECT * FROM "SiteSetting" WHERE "group" = $1', ['CURRENCY']);
+  let baseCurrency = 'INR';
+  let currencies = DEFAULT_CURRENCIES;
+
+  resCurrency.rows.forEach((s) => {
+    if (s.key === 'currency_base') baseCurrency = s.value;
+    if (s.key === 'currency_rates') {
+      try {
+        const parsed = JSON.parse(s.value);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          currencies = parsed;
+        }
+      } catch (e) {
+        // Fallback
+      }
+    }
+  });
+
+  return ApiResponse.send(
+    res,
+    200,
+    { baseCurrency, currencies, enabledCurrencies: currencies.filter((c) => c.enabled !== false) },
+    'Currencies retrieved successfully'
+  );
+});
+

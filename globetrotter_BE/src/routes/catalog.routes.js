@@ -7,6 +7,9 @@ import {
   getGallery,
   getHierarchy,
   getPublicTrips,
+  getCurrencies,
+  toggleLike,
+  toggleSaveTrip,
 } from '../controllers/catalog.controller.js';
 import { authenticate, softAuthenticate } from '../middlewares/auth.middleware.js';
 
