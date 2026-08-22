@@ -41,6 +41,9 @@ export const getTransporterConfig = async () => {
         user: emailUser,
         pass: emailPass,
       },
+      connectionTimeout: 4000,
+      greetingTimeout: 4000,
+      socketTimeout: 4000,
     });
   } else if (smtpHost && emailUser && emailPass) {
     transporter = nodemailer.createTransport({
@@ -51,6 +54,9 @@ export const getTransporterConfig = async () => {
         user: emailUser,
         pass: emailPass,
       },
+      connectionTimeout: 4000,
+      greetingTimeout: 4000,
+      socketTimeout: 4000,
     });
   } else if (emailUser && emailPass) {
     transporter = nodemailer.createTransport({
@@ -59,6 +65,9 @@ export const getTransporterConfig = async () => {
         user: emailUser,
         pass: emailPass,
       },
+      connectionTimeout: 4000,
+      greetingTimeout: 4000,
+      socketTimeout: 4000,
     });
   }
 
@@ -69,26 +78,31 @@ export const getTransporterConfig = async () => {
  * Send email utility for hackathon notifications & alerts
  */
 export const sendEmail = async ({ to, subject, html, text }) => {
-  const { transporter, fromEmail, fromName } = await getTransporterConfig();
+  try {
+    const { transporter, fromEmail, fromName } = await getTransporterConfig();
 
-  const mailOptions = {
-    from: `"${fromName}" <${fromEmail}>`,
-    to,
-    subject,
-    text: text || html?.replace(/<[^>]*>?/gm, '') || '',
-    html,
-  };
+    const mailOptions = {
+      from: `"${fromName}" <${fromEmail}>`,
+      to,
+      subject,
+      text: text || html?.replace(/<[^>]*>?/gm, '') || '',
+      html,
+    };
 
-  if (!transporter) {
-    console.log('📧 [Email Service Log] No active SMTP/Nodemailer credentials configured. Mock email logged:');
-    console.log(`   To: ${to}`);
-    console.log(`   Subject: ${subject}`);
-    console.log(`   From: "${fromName}" <${fromEmail}>`);
-    console.log(`   Body snippet: ${(text || html)?.substring(0, 150)}...\n`);
-    return { mock: true, success: true };
+    if (!transporter) {
+      console.log('📧 [Email Log] Mock email logged (SMTP/Nodemailer not configured):');
+      console.log(`   To: ${to}`);
+      console.log(`   Subject: ${subject}`);
+      console.log(`   From: "${fromName}" <${fromEmail}>\n`);
+      return { mock: true, success: true };
+    }
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`📧 Email successfully dispatched to ${to} [ID: ${info.messageId}]`);
+    return info;
+  } catch (err) {
+    console.warn(`⚠️ [Email Warning] Could not send email to ${to}: ${err.message}`);
+    console.log(`   Mock Fallback -> Subject: ${subject}`);
+    return { mock: true, success: false, error: err.message };
   }
-
-  const info = await transporter.sendMail(mailOptions);
-  console.log(`📧 Email successfully dispatched to ${to} [ID: ${info.messageId}]`);
-  return info;
 };

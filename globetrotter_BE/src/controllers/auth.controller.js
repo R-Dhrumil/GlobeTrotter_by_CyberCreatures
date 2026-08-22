@@ -39,12 +39,18 @@ export const register = catchAsync(async (req, res) => {
   );
   const user = insertRes.rows[0];
 
-  // Dispatch Welcome Email asynchronously
-  sendEmail({
-    to: user.email,
-    subject: 'Welcome to GlobeTrotter! ✈️ Your Explorer Pass is Ready',
-    html: welcomeEmailTemplate({ name: user.name, email: user.email }),
-  }).catch((err) => console.error('⚠️ Notice: Could not send welcome email:', err.message));
+  // Dispatch Welcome Email in non-blocking background task
+  setImmediate(async () => {
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Welcome to GlobeTrotter! ✈️ Your Explorer Pass is Ready',
+        html: welcomeEmailTemplate({ name: user.name, email: user.email }),
+      });
+    } catch (err) {
+      console.error('⚠️ Notice: Could not send welcome email:', err.message);
+    }
+  });
 
   const token = generateToken(user.id);
   const { password: _, ...safeUser } = user;
@@ -78,16 +84,24 @@ export const login = catchAsync(async (req, res) => {
   const isFirstLogin = !user.lastLoginAt;
 
   if (isFirstLogin) {
-    // Send First-Time Login Alert Email
-    sendEmail({
-      to: user.email,
-      subject: '🎉 First Sign-In Confirmed - Welcome to GlobeTrotter',
-      html: firstTimeLoginTemplate({ name: user.name, loginTime: new Date().toLocaleString() }),
-    }).catch((err) => console.error('⚠️ Notice: Could not send first-login email:', err.message));
+    // Send First-Time Login Alert Email in non-blocking background task
+    setImmediate(async () => {
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: '🎉 First Sign-In Confirmed - Welcome to GlobeTrotter',
+          html: firstTimeLoginTemplate({ name: user.name, loginTime: new Date().toLocaleString() }),
+        });
+      } catch (err) {
+        console.error('⚠️ Notice: Could not send first-login email:', err.message);
+      }
+    });
   }
 
-  // Update lastLoginAt timestamp in database
-  await db.query('UPDATE "User" SET "lastLoginAt" = NOW() WHERE id = $1', [user.id]);
+  // Update lastLoginAt timestamp in database asynchronously
+  db.query('UPDATE "User" SET "lastLoginAt" = NOW() WHERE id = $1', [user.id]).catch((err) =>
+    console.error('Failed to update lastLoginAt:', err.message)
+  );
 
   const token = generateToken(user.id);
   const { password: _, ...safeUser } = user;

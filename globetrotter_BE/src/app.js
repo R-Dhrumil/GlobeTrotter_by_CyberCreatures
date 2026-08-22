@@ -56,6 +56,17 @@ app.use(morgan('dev'));
 // Static Uploads Folder (Directly serve uploaded images & documents)
 app.use('/uploads', express.static(uploadsDir));
 
+// Root Welcome Endpoint
+app.get('/', (req, res) => {
+  return ApiResponse.send(res, 200, {
+    name: 'GlobeTrotter Backend API',
+    status: 'OPERATIONAL',
+    health: '/health',
+    docs: '/docs',
+    api: '/api/v1',
+  }, 'Welcome to GlobeTrotter Backend API');
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   return ApiResponse.send(res, 200, { status: 'UP', timestamp: new Date() }, 'Hackathon Backend API is operational');
