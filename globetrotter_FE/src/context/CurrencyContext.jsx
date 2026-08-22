@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { catalogAPI } from '../api/client';
 
 const DEFAULT_CURRENCIES = [
@@ -26,12 +26,13 @@ export const CurrencyProvider = ({ children }) => {
   const fetchCurrencies = async () => {
     try {
       const res = await catalogAPI.getCurrencies();
-      if (res.data?.currencies) {
-        const list = res.data.currencies.filter((c) => c.enabled !== false);
+      const rawList = res.data?.currencies || res.currencies;
+      if (Array.isArray(rawList) && rawList.length > 0) {
+        const list = rawList.filter((c) => c.enabled !== false);
         setCurrencies(list);
       }
-      if (res.data?.baseCurrency) {
-        setBaseCurrencyCode(res.data.baseCurrency);
+      if (res.data?.baseCurrency || res.baseCurrency) {
+        setBaseCurrencyCode(res.data?.baseCurrency || res.baseCurrency);
       }
     } catch (err) {
       console.warn('Failed to load currency settings, using defaults:', err.message);
@@ -43,12 +44,19 @@ export const CurrencyProvider = ({ children }) => {
   }, []);
 
   // Find active currency object, default to INR if not found
-  const activeCurrency = currencies.find((c) => c.code === activeCurrencyCode) ||
-    currencies.find((c) => c.code === 'INR') ||
-    DEFAULT_CURRENCIES[0];
+  const activeCurrency = useMemo(() => {
+    return (
+      currencies.find((c) => c.code === activeCurrencyCode) ||
+      DEFAULT_CURRENCIES.find((c) => c.code === activeCurrencyCode) ||
+      currencies.find((c) => c.code === 'INR') ||
+      DEFAULT_CURRENCIES[0]
+    );
+  }, [currencies, activeCurrencyCode]);
 
   const changeCurrency = (code) => {
-    const found = currencies.find((c) => c.code === code);
+    const found =
+      currencies.find((c) => c.code === code) ||
+      DEFAULT_CURRENCIES.find((c) => c.code === code);
     if (found) {
       setActiveCurrencyCode(found.code);
       localStorage.setItem('globetrotter_currency', found.code);
@@ -56,37 +64,101 @@ export const CurrencyProvider = ({ children }) => {
   };
 
   /**
-   * Convert price from INR to selected currency
+   * Helper to robustly derive exchange rate for a currency relative to base INR
    */
-  const convertPrice = (amountInInr) => {
-    if (amountInInr === undefined || amountInInr === null || isNaN(amountInInr)) return 0;
-    const num = Number(amountInInr);
-    const rate = activeCurrency.ratePerInr || 1.0;
-    return num * rate;
-  };
+  const getExchangeRate = useCallback((curr) => {
+    if (!curr) return 1.0;
+    if (curr.code === 'INR' || curr.isBase) return 1.0;
+
+    // 1. Check explicit ratePerInr property
+    if (typeof curr.ratePerInr === 'number' && curr.ratePerInr > 0) {
+      return curr.ratePerInr;
+    }
+    if (typeof curr.ratePerInr === 'string' && parseFloat(curr.ratePerInr) > 0) {
+      return parseFloat(curr.ratePerInr);
+    }
+
+    // 2. Check inrEquivalent property (1 FX = X INR => ratePerInr = 1 / X)
+    if (typeof curr.inrEquivalent === 'number' && curr.inrEquivalent > 0) {
+      return 1 / curr.inrEquivalent;
+    }
+    if (typeof curr.inrEquivalent === 'string' && parseFloat(curr.inrEquivalent) > 0) {
+      return 1 / parseFloat(curr.inrEquivalent);
+    }
+
+    // 3. Check rate or exchangeRate property
+    const altRate = parseFloat(curr.rate || curr.exchangeRate);
+    if (!isNaN(altRate) && altRate > 0) {
+      return altRate > 1 ? 1 / altRate : altRate;
+    }
+
+    // 4. Fallback lookup in DEFAULT_CURRENCIES preset
+    const preset = DEFAULT_CURRENCIES.find((c) => c.code === curr.code);
+    if (preset && preset.ratePerInr > 0) {
+      return preset.ratePerInr;
+    }
+
+    return 1.0;
+  }, []);
 
   /**
-   * Format price with currency symbol and appropriate decimal precision
+   * Convert price from base currency (INR) to selected active currency
    */
-  const formatPrice = (amountInInr, options = {}) => {
-    if (amountInInr === 0 && options.showFree !== false) {
-      return 'Free';
-    }
-    const val = convertPrice(amountInInr);
-    const symbol = activeCurrency.symbol || '₹';
+  const convertPrice = useCallback(
+    (amountInInr) => {
+      if (amountInInr === undefined || amountInInr === null || isNaN(amountInInr)) return 0;
+      const num = Number(amountInInr);
+      const rate = getExchangeRate(activeCurrency);
+      return num * rate;
+    },
+    [activeCurrency, getExchangeRate]
+  );
 
-    // Decide decimal precision
-    let formattedVal;
-    if (activeCurrency.code === 'JPY') {
-      formattedVal = Math.round(val).toLocaleString();
-    } else if (val % 1 === 0 || val >= 100) {
-      formattedVal = Math.round(val).toLocaleString();
-    } else {
-      formattedVal = val.toFixed(2);
-    }
+  /**
+   * Convert price from active currency to base currency (INR)
+   */
+  const convertFromActiveToBase = useCallback(
+    (amountInActiveCurrency) => {
+      if (
+        amountInActiveCurrency === undefined ||
+        amountInActiveCurrency === null ||
+        isNaN(amountInActiveCurrency)
+      )
+        return 0;
+      const num = Number(amountInActiveCurrency);
+      const rate = getExchangeRate(activeCurrency);
+      return rate > 0 ? num / rate : num;
+    },
+    [activeCurrency, getExchangeRate]
+  );
 
-    return `${symbol}${formattedVal}`;
-  };
+  /**
+   * Format price with currency symbol and decimal formatting
+   */
+  const formatPrice = useCallback(
+    (amountInInr, options = {}) => {
+      if (amountInInr === 0 && options.showFree !== false) {
+        return 'Free';
+      }
+      const val = convertPrice(amountInInr);
+      const symbol = activeCurrency.symbol || '₹';
+
+      let formattedVal;
+      if (activeCurrency.code === 'JPY') {
+        formattedVal = Math.round(val).toLocaleString();
+      } else if (val % 1 === 0) {
+        formattedVal = Math.round(val).toLocaleString();
+      } else {
+        formattedVal = val.toLocaleString(undefined, {
+          minimumFractionDigits: options.decimals ?? (val < 100 && val % 1 !== 0 ? 2 : 0),
+          maximumFractionDigits: 2,
+        });
+      }
+
+      return `${symbol}${formattedVal}`;
+    },
+    [activeCurrency, convertPrice]
+  );
 
   return (
     <CurrencyContext.Provider
@@ -97,6 +169,7 @@ export const CurrencyProvider = ({ children }) => {
         changeCurrency,
         formatPrice,
         convertPrice,
+        convertFromActiveToBase,
         refreshCurrencies: fetchCurrencies,
       }}
     >
@@ -112,3 +185,4 @@ export const useCurrency = () => {
   }
   return ctx;
 };
+

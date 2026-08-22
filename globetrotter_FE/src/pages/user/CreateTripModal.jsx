@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { tripAPI } from '../../api/client';
 import { Modal } from '../../components/common/Modal';
+import { useCurrency } from '../../context/CurrencyContext';
 import { Calendar, Sparkles, DollarSign, Users, Clock, Calculator } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -14,6 +15,7 @@ const sampleCoverPhotos = [
 ];
 
 export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
+  const { formatPrice, activeCurrency } = useCurrency();
   const [formData, setFormData] = useState({
     name: '',
     startDate: '',
@@ -183,14 +185,14 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
         <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200/80 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="font-bold text-xs text-emerald-600">{activeCurrency.symbol || '₹'}</span>
               <span>Budget & Cost Split</span>
             </span>
 
             {perPersonSplit && (
               <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 text-[10px] font-bold border border-emerald-300 flex items-center gap-1">
                 <Calculator className="w-3 h-3 text-emerald-700" />
-                <span>${perPersonSplit.share} / person</span>
+                <span>{formatPrice(perPersonSplit.share)} / person</span>
               </span>
             )}
           </div>
@@ -198,8 +200,8 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
           <div className="grid grid-cols-2 gap-2.5">
             <div>
               <label className="block text-[10px] font-bold text-stone-700 mb-0.5 flex items-center gap-1">
-                <DollarSign className="w-3 h-3 text-emerald-600" />
-                <span>Total Estimated Budget ($)</span>
+                <span className="font-bold text-xs text-emerald-600">{activeCurrency.symbol || '₹'}</span>
+                <span>Total Estimated Budget ({activeCurrency.symbol})</span>
               </label>
               <input
                 type="number"
@@ -231,10 +233,10 @@ export const CreateTripModal = ({ isOpen, onClose, onTripCreated }) => {
           {perPersonSplit && (
             <div className="p-2 rounded-lg bg-white border border-emerald-200/90 text-xs text-stone-700 flex items-center justify-between gap-2 shadow-xs">
               <span className="text-[11px] text-stone-600 font-medium">
-                Split Breakdown: <strong className="text-emerald-950">${perPersonSplit.budget.toLocaleString()} total</strong> ÷ <strong className="text-emerald-950">{perPersonSplit.count} traveler(s)</strong>
+                Split Breakdown: <strong className="text-emerald-950">{formatPrice(perPersonSplit.budget)} total</strong> ÷ <strong className="text-emerald-950">{perPersonSplit.count} traveler(s)</strong>
               </span>
               <span className="px-2.5 py-0.5 rounded-md bg-emerald-700 text-white font-bold text-xs tracking-wide shrink-0">
-                ${perPersonSplit.share} / person
+                {formatPrice(perPersonSplit.share)} / person
               </span>
             </div>
           )}

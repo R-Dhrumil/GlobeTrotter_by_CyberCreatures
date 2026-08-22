@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
@@ -18,10 +19,13 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-2xl'
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-stone-950/65 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+      onClick={onClose}
+    >
       <div
-        className={`relative w-full ${maxWidth} bg-white rounded-2xl shadow-2xl border border-stone-200/80 overflow-hidden animate-fade-in my-8`}
+        className={`relative w-full ${maxWidth} bg-white rounded-2xl shadow-2xl border border-stone-200/80 overflow-hidden my-8`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -38,6 +42,8 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-2xl'
         {/* Content */}
         <div className="p-6 max-h-[80vh] overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
+

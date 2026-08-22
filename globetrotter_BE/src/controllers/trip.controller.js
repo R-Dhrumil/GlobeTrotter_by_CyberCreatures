@@ -341,3 +341,36 @@ export const copyTrip = catchAsync(async (req, res) => {
   const completeTrip = await fetchFullTrip(newTripId);
   return ApiResponse.send(res, 201, { trip: completeTrip }, 'Trip copied to your itinerary!');
 });
+
+/**
+ * Toggle or update public visibility of a trip
+ */
+export const makeTripPublic = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { isPublic } = req.body;
+
+  const check = await db.query('SELECT * FROM "Trip" WHERE id = $1', [id]);
+  if (check.rows.length === 0) {
+    throw new ApiError(404, 'Trip not found');
+  }
+
+  const existingTrip = check.rows[0];
+  if (existingTrip.userId !== req.user.id && req.user.role !== 'ADMIN') {
+    throw new ApiError(403, 'Forbidden: You do not own this trip');
+  }
+
+  const newIsPublic = isPublic !== undefined ? Boolean(isPublic) : !existingTrip.isPublic;
+  let slug = existingTrip.shareSlug;
+
+  if (!slug) {
+    slug = generateSlug(existingTrip.name);
+  }
+
+  await db.query(
+    'UPDATE "Trip" SET "isPublic" = $1, "shareSlug" = $2, "updatedAt" = NOW() WHERE id = $3',
+    [newIsPublic, slug, id]
+  );
+
+  const updatedTrip = await fetchFullTrip(id);
+  return ApiResponse.send(res, 200, { trip: updatedTrip }, `Trip is now ${newIsPublic ? 'public' : 'private'}`);
+});

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { tripAPI, catalogAPI } from '../../api/client';
 import { CreateTripModal } from './CreateTripModal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -20,6 +21,7 @@ import {
 
 export const DashboardPage = () => {
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
 
   const [trips, setTrips] = useState([]);
@@ -62,10 +64,13 @@ export const DashboardPage = () => {
     (acc, t) => acc + t.stops?.reduce((sAcc, s) => sAcc + (s.activities?.length || 0), 0),
     0
   );
-  const totalEstimatedBudget = trips.reduce(
-    (acc, t) => acc + t.budgets?.reduce((bAcc, b) => bAcc + (b.estimatedAmount || 0), 0),
-    0
-  );
+  const totalEstimatedBudget = trips.reduce((acc, t) => {
+    const bSum =
+      t.budgets && t.budgets.length > 0
+        ? t.budgets.reduce((bAcc, b) => bAcc + (parseFloat(b.estimatedAmount) || 0), 0)
+        : parseFloat(t.estimatedBudget) || 0;
+    return acc + bSum;
+  }, 0);
 
   const upcomingTrip = trips[0];
 
@@ -140,10 +145,10 @@ export const DashboardPage = () => {
         <div className="bg-white p-5 sm:p-6 rounded-3xl border border-stone-200/80 shadow-soft flex items-center justify-between">
           <div>
             <p className="text-xs text-stone-500 font-bold uppercase tracking-wider">Allocated Budget</p>
-            <p className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 mt-1">${totalEstimatedBudget}</p>
+            <p className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 mt-1">{formatPrice(totalEstimatedBudget)}</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
-            <DollarSign className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-xl font-serif shrink-0">
+            {activeCurrency.symbol || '₹'}
           </div>
         </div>
       </div>

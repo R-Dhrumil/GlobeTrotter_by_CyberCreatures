@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { tripAPI } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { copyToClipboard } from '../../utils/clipboard';
 import { ImageWithFallback } from '../../components/common/ImageWithFallback';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -26,6 +27,7 @@ import confetti from 'canvas-confetti';
 export const PublicItineraryPage = () => {
   const { slug } = useParams();
   const { isAuthenticated } = useAuth();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
 
   const [trip, setTrip] = useState(null);
@@ -269,7 +271,7 @@ export const PublicItineraryPage = () => {
                                     </h6>
                                     {sa.activity?.cost !== undefined && (
                                       <span className="text-xs font-bold text-emerald-700 shrink-0">
-                                        {sa.activity.cost === 0 ? 'Free' : `$${sa.activity.cost}`}
+                                        {formatPrice(sa.activity.cost)}
                                       </span>
                                     )}
                                   </div>
@@ -341,12 +343,12 @@ export const PublicItineraryPage = () => {
                   {trip.budgets.map((b) => (
                     <div key={b.id} className="flex items-center justify-between text-xs py-1.5 border-b border-stone-100">
                       <span className="font-semibold text-stone-700 capitalize">{b.category?.toLowerCase()}</span>
-                      <span className="font-bold text-stone-900">${b.estimatedAmount}</span>
+                      <span className="font-bold text-stone-900">{formatPrice(b.estimatedAmount)}</span>
                     </div>
                   ))}
                   <div className="pt-3 flex items-center justify-between font-bold text-sm text-stone-900">
                     <span>Total Estimated</span>
-                    <span className="text-amber-700 text-base">${estimatedBudgetTotal}</span>
+                    <span className="text-amber-700 text-base">{formatPrice(estimatedBudgetTotal)}</span>
                   </div>
                 </div>
               )}
