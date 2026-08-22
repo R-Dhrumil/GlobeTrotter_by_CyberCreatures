@@ -7,8 +7,6 @@ import {
   getGallery,
   getHierarchy,
   getPublicTrips,
-  toggleLike,
-  toggleSaveTrip,
 } from '../controllers/catalog.controller.js';
 import { authenticate, softAuthenticate } from '../middlewares/auth.middleware.js';
 
@@ -16,6 +14,7 @@ const router = Router();
 
 router.get('/cities', getCities);
 router.get('/hierarchy', getHierarchy);
+router.get('/currencies', getCurrencies);
 router.get('/cities/:id', getCityById);
 router.get('/activities', getActivities);
 router.get('/featured', getFeaturedDestinations);

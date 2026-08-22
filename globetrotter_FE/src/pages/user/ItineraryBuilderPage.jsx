@@ -5,6 +5,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useToast } from '../../context/ToastContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { copyToClipboard } from '../../utils/clipboard';
 import { ImageWithFallback } from '../../components/common/ImageWithFallback';
 import { InteractiveWorldMap } from '../../components/common/InteractiveWorldMap';
@@ -40,6 +41,7 @@ export const ItineraryBuilderPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { showSuccess, showError, showInfo } = useToast();
+  const { formatPrice } = useCurrency();
 
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -639,7 +641,7 @@ export const ItineraryBuilderPage = () => {
                               )}
                               <span>•</span>
                               <span className="font-semibold text-emerald-700">
-                                {sa.activity?.cost === 0 ? 'Free' : `$${sa.activity?.cost}`}
+                                {formatPrice(sa.activity?.cost)}
                               </span>
                             </div>
                             {sa.notes && (
@@ -885,7 +887,7 @@ export const ItineraryBuilderPage = () => {
                               <span className="font-semibold text-amber-700">{sa.scheduledTime || 'Flexible Time'}</span>
                               <span>•</span>
                               <span className="font-semibold text-emerald-700">
-                                {sa.activity?.cost === 0 ? 'Free' : `$${sa.activity?.cost}`}
+                                {formatPrice(sa.activity?.cost)}
                               </span>
                             </div>
                             <p className="text-[11px] text-stone-500 line-clamp-2">{sa.activity?.description}</p>
@@ -1036,7 +1038,7 @@ export const ItineraryBuilderPage = () => {
                       {chosenAct.category}
                     </span>
                     <span className="text-xs font-bold text-emerald-700">
-                      {chosenAct.cost === 0 ? 'Free Experience' : `$${chosenAct.cost} per person`}
+                      {chosenAct.cost === 0 ? 'Free Experience' : `${formatPrice(chosenAct.cost)} per person`}
                     </span>
                   </div>
                   <h5 className="text-xs font-bold text-stone-900 font-serif mt-1">{chosenAct.name}</h5>

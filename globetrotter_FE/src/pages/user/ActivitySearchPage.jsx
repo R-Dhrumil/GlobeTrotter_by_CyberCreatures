@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { catalogAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { ImageWithFallback } from '../../components/common/ImageWithFallback';
+import { useCurrency } from '../../context/CurrencyContext';
 import {
   Compass,
   Search,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export const ActivitySearchPage = () => {
+  const { formatPrice } = useCurrency();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -144,7 +146,7 @@ export const ActivitySearchPage = () => {
                   </span>
 
                   <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500 text-stone-900 shadow-md">
-                    {act.cost === 0 ? 'Free' : `$${act.cost}`}
+                    {formatPrice(act.cost)}
                   </span>
 
                   <div className="absolute bottom-3 left-4 right-4 text-white">

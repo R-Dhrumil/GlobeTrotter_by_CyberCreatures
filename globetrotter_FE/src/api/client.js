@@ -85,6 +85,7 @@ export const catalogAPI = {
   toggleLike: (data) => api.post('/catalog/gallery/like', data),
   toggleSaveTrip: (tripId) => api.post('/catalog/gallery/save', { tripId }),
   getPublicTrips: (params) => api.get('/catalog/public-trips', { params }),
+  getCurrencies: () => api.get('/catalog/currencies'),
 };
 
 export const contactAPI = {

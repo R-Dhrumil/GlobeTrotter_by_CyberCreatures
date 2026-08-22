@@ -4,6 +4,7 @@ import { tripAPI } from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useToast } from '../../context/ToastContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import {
   DollarSign,
   PieChart as PieIcon,
@@ -42,6 +43,7 @@ const CATEGORIES = ['TRANSPORT', 'STAY', 'ACTIVITIES', 'MEALS', 'OTHER'];
 export const BudgetPage = () => {
   const { id } = useParams();
   const { showSuccess, showError } = useToast();
+  const { formatPrice } = useCurrency();
 
   const [trip, setTrip] = useState(null);
   const [budgetData, setBudgetData] = useState(null);
@@ -186,8 +188,8 @@ export const BudgetPage = () => {
           <div>
             <h3 className="text-base font-bold font-serif">Over-Budget Warning</h3>
             <p className="text-xs text-rose-700 mt-1 leading-relaxed">
-              Your actual expenses (${summary.actualTotal}) have exceeded your total estimated budget (${summary.estimatedTotal}) by{' '}
-              <strong>{summary.overBudgetPercent}%</strong> (${summary.actualTotal - summary.estimatedTotal}). Consider adjusting your category allocations.
+              Your actual expenses ({formatPrice(summary.actualTotal)}) have exceeded your total estimated budget ({formatPrice(summary.estimatedTotal)}) by{' '}
+              <strong>{summary.overBudgetPercent}%</strong> ({formatPrice(summary.actualTotal - summary.estimatedTotal)}). Consider adjusting your category allocations.
             </p>
           </div>
         </div>
@@ -197,14 +199,14 @@ export const BudgetPage = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white p-5 rounded-3xl border border-stone-200/80 shadow-soft">
           <p className="text-[11px] text-stone-400 font-bold uppercase tracking-wider">Estimated Budget</p>
-          <p className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 mt-1">${summary?.estimatedTotal || 0}</p>
+          <p className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 mt-1">{formatPrice(summary?.estimatedTotal || 0)}</p>
           <p className="text-[11px] text-stone-500 mt-1">Planned threshold</p>
         </div>
 
         <div className="bg-white p-5 rounded-3xl border border-stone-200/80 shadow-soft">
           <p className="text-[11px] text-stone-400 font-bold uppercase tracking-wider">Actual Spent</p>
           <p className={`text-2xl sm:text-3xl font-bold font-serif mt-1 ${summary?.isOverBudget ? 'text-rose-600' : 'text-emerald-700'}`}>
-            ${summary?.actualTotal || 0}
+            {formatPrice(summary?.actualTotal || 0)}
           </p>
           <p className="text-[11px] text-stone-500 mt-1">Logged expenses</p>
         </div>
@@ -212,7 +214,7 @@ export const BudgetPage = () => {
         <div className="bg-white p-5 rounded-3xl border border-stone-200/80 shadow-soft">
           <p className="text-[11px] text-stone-400 font-bold uppercase tracking-wider">Avg Cost / Day</p>
           <p className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 mt-1">
-            ${summary?.averageCostPerDay || 0}
+            {formatPrice(summary?.averageCostPerDay || 0)}
           </p>
           <p className="text-[11px] text-stone-500 mt-1">Across {summary?.dayCount || 1} expedition days</p>
         </div>
@@ -220,7 +222,7 @@ export const BudgetPage = () => {
         <div className="bg-white p-5 rounded-3xl border border-stone-200/80 shadow-soft">
           <p className="text-[11px] text-stone-400 font-bold uppercase tracking-wider">Activities Value</p>
           <p className="text-2xl sm:text-3xl font-bold font-serif text-amber-700 mt-1">
-            ${summary?.activityEstimatedTotal || 0}
+            {formatPrice(summary?.activityEstimatedTotal || 0)}
           </p>
           <p className="text-[11px] text-stone-500 mt-1">From scheduled catalog stops</p>
         </div>
@@ -407,15 +409,15 @@ export const BudgetPage = () => {
                           ></span>
                           {b.category}
                         </td>
-                        <td className="py-3 font-semibold text-stone-700">${b.estimatedAmount}</td>
-                        <td className="py-3 font-semibold text-stone-900">${b.actualAmount}</td>
+                        <td className="py-3 font-semibold text-stone-700">{formatPrice(b.estimatedAmount)}</td>
+                        <td className="py-3 font-semibold text-stone-900">{formatPrice(b.actualAmount)}</td>
                         <td className="py-3 font-bold">
                           {diff > 0 ? (
-                            <span className="text-rose-600">+${diff} (Over)</span>
+                            <span className="text-rose-600">+{formatPrice(diff)} (Over)</span>
                           ) : diff < 0 ? (
-                            <span className="text-emerald-700">-${Math.abs(diff)} (Saved)</span>
+                            <span className="text-emerald-700">-{formatPrice(Math.abs(diff))} (Saved)</span>
                           ) : (
-                            <span className="text-stone-400">$0</span>
+                            <span className="text-stone-400">{formatPrice(0)}</span>
                           )}
                         </td>
                         <td className="py-3 text-stone-500 max-w-xs truncate">{b.notes || '—'}</td>
