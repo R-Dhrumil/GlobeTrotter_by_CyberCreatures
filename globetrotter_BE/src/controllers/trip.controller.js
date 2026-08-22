@@ -61,6 +61,14 @@ export const fetchFullTrip = async (tripId) => {
   );
   trip.budgets = budgetsRes.rows;
 
+  // Group travel info
+  const groupCountRes = await db.query(
+    'SELECT COUNT(*) as count FROM "GroupMember" WHERE "tripId" = $1',
+    [tripId]
+  );
+  trip.groupMemberCount = parseInt(groupCountRes.rows[0].count);
+  trip.isGroupTrip = trip.groupMemberCount > 0;
+
   return trip;
 };
 
@@ -100,15 +108,27 @@ export const createTrip = catchAsync(async (req, res) => {
  * Get all trips for current logged-in user
  */
 export const getMyTrips = catchAsync(async (req, res) => {
+  // Get trips the user owns OR is a group member of
   const tripsRes = await db.query(
-    `SELECT id FROM "Trip" WHERE "userId" = $1 ORDER BY "createdAt" DESC`,
+    `SELECT DISTINCT t.id FROM "Trip" t
+     LEFT JOIN "GroupMember" gm ON t.id = gm."tripId"
+     WHERE t."userId" = $1 OR gm."userId" = $1
+     ORDER BY t.id DESC`,
     [req.user.id]
   );
 
   const trips = [];
   for (const row of tripsRes.rows) {
     const t = await fetchFullTrip(row.id);
-    if (t) trips.push(t);
+    if (t) {
+      // Mark role for the current user
+      const memberRes = await db.query(
+        'SELECT role FROM "GroupMember" WHERE "tripId" = $1 AND "userId" = $2',
+        [row.id, req.user.id]
+      );
+      t.myGroupRole = memberRes.rows.length > 0 ? memberRes.rows[0].role : (t.userId === req.user.id ? 'OWNER' : null);
+      trips.push(t);
+    }
   }
 
   return ApiResponse.send(res, 200, { trips }, 'User trips retrieved successfully');
@@ -129,7 +149,17 @@ export const getTripById = catchAsync(async (req, res) => {
   const isOwner = req.user && req.user.id === trip.userId;
   const isAdmin = req.user && req.user.role === 'ADMIN';
 
-  if (!isOwner && !isAdmin && !trip.isPublic) {
+  // Check if user is a group member
+  let isGroupMember = false;
+  if (req.user) {
+    const memberRes = await db.query(
+      'SELECT * FROM "GroupMember" WHERE "tripId" = $1 AND "userId" = $2',
+      [id, req.user.id]
+    );
+    isGroupMember = memberRes.rows.length > 0;
+  }
+
+  if (!isOwner && !isAdmin && !isGroupMember && !trip.isPublic) {
     throw new ApiError(403, 'You do not have permission to view this private trip');
   }
 

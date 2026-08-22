@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  DollarSign,
 } from 'lucide-react';
 
 export const UserProfilePage = () => {
@@ -26,6 +27,8 @@ export const UserProfilePage = () => {
     photoUrl: user?.photoUrl || '',
     languagePref: user?.languagePref || 'en',
     department: user?.department || 'Solo Explorer',
+    currency: user?.currency || 'USD',
+    country: user?.country || '',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -191,6 +194,44 @@ export const UserProfilePage = () => {
                 <option value="de">Deutsch (German)</option>
                 <option value="ja">日本語 (Japanese)</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                Preferred Currency
+              </label>
+              <select
+                value={profileData.currency}
+                onChange={(e) => setProfileData({ ...profileData, currency: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-none focus:border-amber-600"
+              >
+                <option value="USD">USD ($) — US Dollar</option>
+                <option value="EUR">EUR (€) — Euro</option>
+                <option value="GBP">GBP (£) — British Pound</option>
+                <option value="INR">INR (₹) — Indian Rupee</option>
+                <option value="JPY">JPY (¥) — Japanese Yen</option>
+                <option value="AUD">AUD (A$) — Australian Dollar</option>
+                <option value="CAD">CAD (C$) — Canadian Dollar</option>
+                <option value="CHF">CHF (Fr) — Swiss Franc</option>
+                <option value="CNY">CNY (¥) — Chinese Yuan</option>
+                <option value="SGD">SGD (S$) — Singapore Dollar</option>
+                <option value="AED">AED (د.إ) — UAE Dirham</option>
+                <option value="THB">THB (฿) — Thai Baht</option>
+                <option value="BRL">BRL (R$) — Brazilian Real</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+                Country
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. United States, India, Germany"
+                value={profileData.country}
+                onChange={(e) => setProfileData({ ...profileData, country: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-none focus:border-amber-600"
+              />
             </div>
 
             <button
